@@ -11,11 +11,12 @@ import uuid
 
 
 class FieldAgent(mg.GeoAgent):
-    def __init__(self, unique_id, model, geometry, crs):
+    def __init__(self, unique_id, model, geometry, crs, initial_wood, initial_grass, initial_scrub):
 
-        super().__init__(unique_id, model, geometry, crs)
+        super().__init__(unique_id, model, geometry, crs)    
+
         # set up the dominant habitat condition
-        self.condition=np.random.choice(["grassland", "thorny_scrubland", "woodland", "bare_ground"], p=[0.899, 0.043, 0.058, 0])
+        self.condition=np.random.choice(["grassland", "thorny_scrubland", "woodland", "bare_ground"], p=[initial_grass, initial_scrub, initial_wood, 1-(initial_grass+initial_scrub+initial_wood)])
         # what is the size of my patch? some fields are multipolygons
         if type(self.geometry) == Polygon:
             self.size_of_patch = Polygon(self.geometry).area
@@ -46,6 +47,13 @@ class FieldAgent(mg.GeoAgent):
             self.youngscrub_here = int(random.randint(0, 5000)*(self.size_of_patch/10000))
             self.perc_grass_here = random.randint(0, 100)
             self.perc_bareground_here = 100 - self.perc_grass_here
+        if self.condition == 'bare_ground': 
+            self.trees_here = int(random.randint(0, 749)*(self.size_of_patch/10000))
+            self.saplings_here = 0
+            self.scrub_here = int(random.randint(0, 749)*(self.size_of_patch/10000))
+            self.youngscrub_here = 0
+            self.perc_bareground_here = random.randint(50, 100)
+            self.perc_grass_here = 100 - self.perc_bareground_here
         # this is the food available for herbivores in this habitat agent
         self.edibles = defaultdict(int)
         self.edibles["trees"] = self.trees_here

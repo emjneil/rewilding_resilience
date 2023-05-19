@@ -25,7 +25,7 @@ class KneppModel(mesa.Model):
                         european_bison_reproduce, european_bison_gain_from_grass, european_bison_gain_from_trees, european_bison_gain_from_scrub, european_bison_gain_from_saplings, european_bison_gain_from_young_scrub,
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
-                        chance_scrub_saves_saplings, 
+                        chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                         max_time, reintroduction, introduce_euroBison, introduce_elk):
 
         # add the schedule and experiments 
@@ -35,10 +35,11 @@ class KneppModel(mesa.Model):
         self.introduce_euroBison = introduce_euroBison
         self.introduce_elk = introduce_elk
 
+
         # first define the space and add the field polygon agents
         self.space = FieldSpace()
 
-        ac = mg.AgentCreator(agent_class=FieldAgent, model=self, crs="epsg:27700")
+        ac = mg.AgentCreator(agent_class=FieldAgent, model=self, crs="epsg:27700", agent_kwargs={"initial_wood": initial_wood, "initial_grass": initial_grass, "initial_scrub": initial_scrub})
         fields = ac.from_file("cleaned_shp.shp", unique_id="id")
         self.fields = fields 
         self.space.add_fields(fields)
@@ -120,6 +121,7 @@ class KneppModel(mesa.Model):
         self.redDeer_stocking_forecast = redDeer_stocking_forecast
         self.tamworthPig_stocking_forecast = tamworthPig_stocking_forecast
         self.exmoor_stocking_forecast = exmoor_stocking_forecast
+
 
         # chance of tree and scrub mortality
         self.chance_scrub_saves_saplings = chance_scrub_saves_saplings
