@@ -1178,9 +1178,6 @@ class KneppModel(mesa.Model):
 
         # if conditions for four non-controlled elements don't change for 10 years, stop the model 
 
-
-
-
     def run_model(self): 
         for i in range(10000):
             if self.running == True: 

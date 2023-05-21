@@ -16,7 +16,9 @@ class FieldAgent(mg.GeoAgent):
         super().__init__(unique_id, model, geometry, crs)    
 
         # set up the dominant habitat condition
-        self.condition=np.random.choice(["grassland", "thorny_scrubland", "woodland", "bare_ground"], p=[initial_grass, initial_scrub, initial_wood, 1-(initial_grass+initial_scrub+initial_wood)])
+        bare_ground = 1-(initial_grass+initial_scrub+initial_wood)
+        bare_ground_prob = max(0, bare_ground)
+        self.condition=np.random.choice(["grassland", "thorny_scrubland", "woodland", "bare_ground"], p=[initial_grass, initial_scrub, initial_wood, bare_ground_prob])
         # what is the size of my patch? some fields are multipolygons
         if type(self.geometry) == Polygon:
             self.size_of_patch = Polygon(self.geometry).area
