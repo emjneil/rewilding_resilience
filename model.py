@@ -26,13 +26,17 @@ class KneppModel(mesa.Model):
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                        reintroduction, introduce_euroBison, introduce_elk):
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration,
+                        reintroduction, introduce_euroBison, introduce_elk, 
+                        experiment_growth, experiment_wood):
 
         # add the schedule and experiments 
         self.schedule = RandomActivationByBreed(self)
         self.reintroduction = reintroduction
         self.introduce_euroBison = introduce_euroBison
         self.introduce_elk = introduce_elk
+        self.experiment_growth = experiment_growth
+        self.experiment_wood = experiment_wood
 
 
         # first define the space and add the field polygon agents
@@ -124,6 +128,10 @@ class KneppModel(mesa.Model):
 
         # chance of tree and scrub mortality
         self.chance_scrub_saves_saplings = chance_scrub_saves_saplings
+        self.exp_chance_reproduceSapling = exp_chance_reproduceSapling
+        self.exp_chance_reproduceYoungScrub = exp_chance_reproduceYoungScrub
+        self.exp_chance_regrowGrass = exp_chance_regrowGrass
+        self.duration = duration
 
 
         # then add the herbivores as points
@@ -146,6 +154,7 @@ class KneppModel(mesa.Model):
 
         # get data organized
         self.datacollector = DataCollector(
+
         model_reporters = {
             # number and type of habitats
             "Time": lambda m: m.schedule.time, 
@@ -155,72 +164,14 @@ class KneppModel(mesa.Model):
             "Fallow deer": lambda m: m.schedule.get_breed_count(fallow_deer_agent),
             "Red deer": lambda m: m.schedule.get_breed_count(red_deer_agent),
             "Tamworth pigs": lambda m: m.schedule.get_breed_count(tamworth_pig_agent),
-            "European bison": lambda m: m.schedule.get_breed_count(european_bison_agent),
-            "European elk": lambda m: m.schedule.get_breed_count(european_elk_agent),
-            # number of habitat types
+            # "European bison": lambda m: m.schedule.get_breed_count(european_bison_agent),
+            # "European elk": lambda m: m.schedule.get_breed_count(european_elk_agent),
+
+            # habitat types
             "Grassland": lambda m: self.count_condition(m, "grassland"),
             "Woodland": lambda m: self.count_condition(m, "woodland"),
             "Thorny Scrub": lambda m: self.count_condition(m, "thorny_scrubland"),
-            "Bare ground": lambda m: self.count_condition(m, "bare_ground"),
-            # number of habitat types
-            "Grass": lambda m: self.count_habitat_numbers(m, "grass"),
-            "Trees": lambda m: self.count_habitat_numbers(m, "trees"),
-            "Mature Scrub": lambda m: self.count_habitat_numbers(m, "scrub"),
-            "Saplings": lambda m: self.count_habitat_numbers(m, "saplings"),
-            "Young Scrub": lambda m: self.count_habitat_numbers(m,"youngScrub"),
-            "Bare Areas": lambda m: self.count_habitat_numbers(m, "bare_ground"),
-            # what's killing saplings?
-            "Saplings grown up": lambda m: self.count_habitats_grew(m, "saplings"),
-            "Saplings eaten by roe deer": lambda m: self.count_eaten(m, roe_deer_agent, "saplings"),
-            "Saplings eaten by Exmoor pony": lambda m: self.count_eaten(m, exmoor_pony_agent, "saplings"),
-            "Saplings eaten by Fallow deer": lambda m: self.count_eaten(m, fallow_deer_agent, "saplings"),
-            "Saplings eaten by longhorn cattle": lambda m: self.count_eaten(m, longhorn_cattle_agent, "saplings"),
-            "Saplings eaten by red deer": lambda m: self.count_eaten(m, red_deer_agent, "saplings"),
-            "Saplings eaten by pigs": lambda m: self.count_eaten(m, tamworth_pig_agent, "saplings"),
-            # what about young scrub?
-            "Young scrub grown up": lambda m: self.count_habitats_grew(m, "youngScrub"),
-            "Young Scrub eaten by roe deer": lambda m: self.count_eaten(m, roe_deer_agent, "youngScrub"),
-            "Young Scrub eaten by Exmoor pony": lambda m: self.count_eaten(m, exmoor_pony_agent, "youngScrub"),
-            "Young Scrub eaten by Fallow deer": lambda m: self.count_eaten(m, fallow_deer_agent, "youngScrub"),
-            "Young Scrub eaten by longhorn cattle": lambda m: self.count_eaten(m, longhorn_cattle_agent, "youngScrub"),
-            "Young Scrub eaten by red deer": lambda m: self.count_eaten(m, red_deer_agent, "youngScrub"),
-            "Young Scrub eaten by pigs": lambda m: self.count_eaten(m, tamworth_pig_agent, "youngScrub"),
-            # what's eating grass? 
-            "Grass Outcompeted by Trees": lambda m: self.count_habitats_outcompeted_trees(m, "grass"),
-            "Grass Outcompeted by Scrub": lambda m: self.count_habitats_outcompeted_scrub(m, "grass"),
-            "Grass eaten by roe deer": lambda m: self.count_eaten(m, roe_deer_agent, "grass"),
-            "Grass eaten by Exmoor pony": lambda m: self.count_eaten(m, exmoor_pony_agent, "grass"),
-            "Grass eaten by Fallow deer": lambda m: self.count_eaten(m, fallow_deer_agent, "grass"),
-            "Grass eaten by longhorn cattle": lambda m: self.count_eaten(m, longhorn_cattle_agent, "grass"),
-            "Grass eaten by red deer": lambda m: self.count_eaten(m, red_deer_agent, "grass"),
-            "Grass eaten by pigs": lambda m: self.count_eaten(m, tamworth_pig_agent, "grass"),
-            # what's killing scrub? 
-            "Scrub Outcompeted by Trees": lambda m: self.count_habitats_outcompeted_trees(m, "scrub"),
-            "Scrub eaten by roe deer": lambda m: self.count_eaten(m, roe_deer_agent, "scrub"),
-            "Scrub eaten by Exmoor pony": lambda m: self.count_eaten(m, exmoor_pony_agent, "scrub"),
-            "Scrub eaten by Fallow deer": lambda m: self.count_eaten(m, fallow_deer_agent, "scrub"),
-            "Scrub eaten by longhorn cattle": lambda m: self.count_eaten(m, longhorn_cattle_agent, "scrub"),
-            "Scrub eaten by red deer": lambda m: self.count_eaten(m, red_deer_agent, "scrub"),
-            "Scrub eaten by pigs": lambda m: self.count_eaten(m, tamworth_pig_agent, "scrub"),
-            # how many trees are being eaten? 
-            "Trees eaten by roe deer": lambda m: self.count_eaten(m, roe_deer_agent, "trees"),
-            "Trees eaten by Exmoor pony": lambda m: self.count_eaten(m, exmoor_pony_agent, "trees"),
-            "Trees eaten by Fallow deer": lambda m: self.count_eaten(m, fallow_deer_agent, "trees"),
-            "Trees eaten by longhorn cattle": lambda m: self.count_eaten(m, longhorn_cattle_agent, "trees"),                   
-            "Trees eaten by red deer": lambda m: self.count_eaten(m, red_deer_agent, "trees"),
-            "Trees eaten by pigs": lambda m: self.count_eaten(m, tamworth_pig_agent, "trees"),
-            # count how many times woodland switched from scrub
-            "Woodland regenerated in scrub": lambda m: self.count_scrub_facilitation(m, FieldAgent),
-            # count how many times woodland switched from grass/bare ground
-            "Woodland regenerated elsewhere": lambda m: self.count_other_facilitation(m, FieldAgent),
-
-            },
-            # where are the animals at each timestep
-            agent_reporters = {
-            "Breed": lambda agent: agent.__class__.__name__ if (agent.__class__.__name__ != "FieldAgent") else agent.condition,
-            "ID": lambda agent: agent.unique_id,
-            "Energy": lambda agent: agent.energy if (agent.__class__.__name__ != "FieldAgent") else None,
-            "Geometry": lambda agent: agent.geometry
+            "Bare ground": lambda m: self.count_condition(m, "bare_ground"),            
             }
             )
 
@@ -228,23 +179,6 @@ class KneppModel(mesa.Model):
         self.running = True
         self.datacollector.collect(self)
 
-
-    ### ------ functions related to data collection ---- ###
-    def count_other_facilitation(self, model, agent):
-        # want to count grass, wood, scrub, bare ground in each patch
-        count_other = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            count_other += value.other_to_wood
-        # return percentage of entire area (number of grid cells)
-        return count_other
-
-    def count_scrub_facilitation(self, model, agent):
-        # want to count grass, wood, scrub, bare ground in each patch
-        count_scrub = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            count_scrub += value.scrub_to_wood
-        # return percentage of entire area (number of grid cells)
-        return count_scrub
 
 
     def count_condition(self, model, habitat_condition):
@@ -256,79 +190,6 @@ class KneppModel(mesa.Model):
         # return percentage of entire area (number of grid cells)
         return round((count/506)*100)
 
-
-    def track_position(self, model, breed):
-        # want to count the xy coords of each animal
-        for key, value in model.schedule.agents_by_breed[breed].items():
-            return value.pos, value.unique_id
-
-    def count_habitats_outcompeted_scrub(self, model, habitat_type):
-        # want to count grass, wood, scrub, bare ground in each patch
-        count_item = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            count_item += value.habs_outcompeted_byScrub[habitat_type]
-        # now count the total number of that item (for mortality ratio)
-        total_number = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            total_number += value.edibles[habitat_type]
-        if total_number == 0:
-            ratio = 0
-        else:
-            ratio = count_item/total_number
-        return ratio
-
-    def count_habitats_outcompeted_trees(self, model, habitat_type):
-        # want to count grass, wood, scrub, bare ground in each patch
-        count_item = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            count_item += value.habs_outcompeted_byTrees[habitat_type]
-        # now count the total number of that item (for mortality ratio)
-        total_number = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            total_number += value.edibles[habitat_type]
-        if total_number == 0:
-            ratio = 0
-        else:
-            ratio = count_item/total_number
-        return ratio
-
-    def count_habitats_grew(self, model, habitat_type):
-        # want to count grass, wood, scrub, bare ground in each patch
-        count_item = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            count_item += value.habs_grew_up[habitat_type]
-        # now count the total number of that item (for mortality ratio)
-        total_number = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            total_number += value.edibles[habitat_type]        
-        if total_number == 0:
-            ratio = 0
-        else:
-            ratio = count_item/total_number
-        return ratio
-
-    def count_eaten(self, model, breed, eaten_thing):
-        count_item = 0
-        # want to count grass, wood, scrub, bare ground in each patch
-        for key, value in model.schedule.agents_by_breed[breed].items():
-            count_item += value.count_eaten[eaten_thing]
-         # now count the total number of that item (for mortality ratio)
-        total_number = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            total_number += value.edibles[eaten_thing]
-        if total_number == 0:
-            ratio = 0
-        else:
-            ratio = count_item/total_number
-        return ratio
-
-    def count_habitat_numbers(self, model, habitat_thing):
-        # want to count grass, wood, scrub, bare ground in each patch
-        count_item = 0
-        for key, value in model.schedule.agents_by_breed[FieldAgent].items():
-            count_item += value.edibles[habitat_thing]
-        # return percentage of entire area
-        return count_item
 
 
 
@@ -438,6 +299,7 @@ class KneppModel(mesa.Model):
 
 
 
+
     ### ------ time steps ---- ###
 
     def step(self):
@@ -445,6 +307,12 @@ class KneppModel(mesa.Model):
         self.datacollector.collect(self)
 
         self.schedule.step()
+
+        # # set it unrealistically high for now, it will be reset later
+        # experiment_start = 100000
+        # experiment_end = 110000
+        # # remember the original parameters
+        # original_growth = self.chance_reproduceSapling
 
         # reintroduce species
         if self.reintroduction == True:
@@ -1011,21 +879,57 @@ class KneppModel(mesa.Model):
 
 
 
-                                                ### Forecasting ###
+
+
+
+                                                ### Forecasting and perturbation experiments ###
+            
 
             # March 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 3:
                 # get the time-step of five years previously; if it hasn't changed, stop
                 results = self.datacollector.get_model_vars_dataframe() 
-                five_years_ago = self.schedule.time - 120
+                ten_years_ago = self.schedule.time - 120 # 120
 
                 # stop running it if it's at equilibrium
-                if (abs(results.iloc[-1]["Grassland"]-results.iloc[five_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[five_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[five_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[five_years_ago]["Roe deer"]) < 5):                
+                if (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
+                    
+                    # # decrease growth rates for 1 year 
+                    # if self.experiment_growth == True:
+                    #     print("starting growth experiment")
+                    #     # check my start and end times
+                    #     experiment_start = self.schedule.time
+                    #     ten_years_ago_exp = self.schedule.time - 120
+                    #     experiment_end = self.schedule.time + self.duration
+                        
+                    #     # this is the time-period of perturbations
+                    #     if self.schedule.time >= experiment_start and self.schedule.time <= experiment_end:
+                    #         # randomly change growth rates of vegetation
+                    #         self.chance_reproduceSapling = self.exp_chance_reproduceSapling 
+                    #     else:
+                    #         self.chance_reproduceSapling = original_growth
+                        
+                    #     print(self.chance_reproduceSapling)
+
+                    #         # self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                    #         # self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    
+                    #     # stop it when it reaches new equilibrium
+                    #     if (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago_exp]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago_exp]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago_exp]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago_exp]["Roe deer"]) < 5):                
+                    #         print("done")
+                    #         self.running = False
+                        
+                    # elif self.experiment_wood == True:
+                    #     print("huzzah")
+                    #     # run_wood_experiment()
+                    # else:
+
                     print("stopping at", self.schedule.time)
                     self.running = False
 
                 # otherwise keep going
                 else: 
+                    print("continuing:", self.schedule.time)
                     results = self.datacollector.get_model_vars_dataframe()
                     # first make sure that exmoor ponies are at their stocking density
                     if results.iloc[-1]['Exmoor pony'] < self.exmoor_stocking_forecast: # shouldn't have to subtract anything since they don't grow
@@ -1062,6 +966,7 @@ class KneppModel(mesa.Model):
                             number_to_remove = int(-50 + int(results.iloc[-1]['European elk']))
                             self.remove_herbivores(european_elk_agent, number_to_remove)
 
+
             # April 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 2:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1071,24 +976,32 @@ class KneppModel(mesa.Model):
                 if results.iloc[-1]['Red deer'] > self.redDeer_stocking_forecast:
                     number_to_subtract = int(-self.redDeer_stocking_forecast + int(results.iloc[-1]['Red deer']))
                     self.remove_herbivores(red_deer_agent, number_to_subtract)
+                
+
             # May 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 3:
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Tamworth pigs'] > self.tamworthPig_stocking_forecast:
                     number_to_subtract = random.randint(0,self.tamworthPig_stocking_forecast)
                     self.remove_pig(tamworth_pig_agent, number_to_subtract,0,0)
+
+
             # June 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 4:
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] >= self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
                     self.remove_herbivores(longhorn_cattle_agent, number_to_subtract)
+
+
             # July 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 5:
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] >= self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
                     self.remove_herbivores(longhorn_cattle_agent, number_to_subtract)
+
+
             # August 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 6:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1101,6 +1014,8 @@ class KneppModel(mesa.Model):
                 if results.iloc[-1]['Red deer'] > self.redDeer_stocking_forecast:
                     number_to_subtract = random.randint(0,self.redDeer_stocking_forecast)
                     self.remove_herbivores(red_deer_agent, number_to_subtract)
+ 
+
             # Sept 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 7:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1110,12 +1025,16 @@ class KneppModel(mesa.Model):
                 if results.iloc[-1]['Fallow deer'] > self.fallowDeer_stocking_forecast:
                     number_to_subtract = random.randint(0,self.fallowDeer_stocking_forecast)
                     self.remove_herbivores(fallow_deer_agent, number_to_subtract)
+
+
             # Oct 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 8:
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
                     self.remove_herbivores(longhorn_cattle_agent, number_to_subtract)
+
+
             # Nov 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 9:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1128,6 +1047,8 @@ class KneppModel(mesa.Model):
                 if results.iloc[-1]['Red deer'] > self.redDeer_stocking_forecast:
                     number_to_subtract = random.randint(0,self.redDeer_stocking_forecast)
                     self.remove_herbivores(red_deer_agent, number_to_subtract)
+
+
             # Dec 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 10:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1145,6 +1066,8 @@ class KneppModel(mesa.Model):
                     self.remove_pig(tamworth_pig_agent,number_to_subtract,0,0)
                 # add boars
                 self.add_pig(tamworth_pig_agent, 0, 0, 1, random_move)
+
+
             # Jan 2022
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 11:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1160,6 +1083,8 @@ class KneppModel(mesa.Model):
                 if results.iloc[-1]['Tamworth pigs'] > self.tamworthPig_stocking_forecast:
                     number_to_subtract = random.randint(0,self.tamworthPig_stocking_forecast)
                     self.remove_pig(tamworth_pig_agent,number_to_subtract,0,1)
+
+
             # Feb 2022: cull them all back to stocking values
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 12:
                 results = self.datacollector.get_model_vars_dataframe()
@@ -1174,17 +1099,17 @@ class KneppModel(mesa.Model):
                     self.remove_herbivores(red_deer_agent, number_to_subtract)
                 if results.iloc[-1]['Tamworth pigs'] > self.tamworthPig_stocking_forecast:
                     number_to_subtract = int(-self.tamworthPig_stocking_forecast + int(results.iloc[-1]['Tamworth pigs']))
-                    self.remove_pig(tamworth_pig_agent,number_to_subtract,0,0)                    
-
-        # if conditions for four non-controlled elements don't change for 10 years, stop the model 
-
+                    self.remove_pig(tamworth_pig_agent,number_to_subtract,0,0)  
+                  
 
 
 
     def run_model(self): 
-        for i in range(10000):
+        for i in range(1000):
             if self.running == True: 
                 self.step()
+
         results = self.datacollector.get_model_vars_dataframe()
+
 
         return results

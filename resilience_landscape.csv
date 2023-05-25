@@ -1,61 +1,6 @@
-,Initial Condition,End Condition,Ecosystem Element,Stocking Change
-0,50,50,Grassland,0.0
-1,36,36,Woodland,0.0
-2,14,14,Thorny Scrub,0.0
-3,0,0,Bare ground,0.0
-4,10,10,Grassland,0.5
-5,27,27,Woodland,0.5
-6,15,15,Thorny Scrub,0.5
-7,48,48,Bare ground,0.5
-8,10,10,Grassland,1.0
-9,63,63,Woodland,1.0
-10,26,26,Thorny Scrub,1.0
-11,0,0,Bare ground,1.0
-12,28,28,Grassland,2.0
-13,54,54,Woodland,2.0
-14,19,19,Thorny Scrub,2.0
-15,0,0,Bare ground,2.0
-16,21,21,Grassland,5.0
-17,41,41,Woodland,5.0
-18,38,38,Thorny Scrub,5.0
-19,0,0,Bare ground,5.0
-20,30,30,Grassland,0.0
-21,46,46,Woodland,0.0
-22,24,24,Thorny Scrub,0.0
-23,0,0,Bare ground,0.0
-24,41,41,Grassland,0.5
-25,36,36,Woodland,0.5
-26,23,23,Thorny Scrub,0.5
-27,0,0,Bare ground,0.5
-28,30,30,Grassland,1.0
-29,31,31,Woodland,1.0
-30,39,39,Thorny Scrub,1.0
-31,0,0,Bare ground,1.0
-32,33,33,Grassland,2.0
-33,48,48,Woodland,2.0
-34,19,19,Thorny Scrub,2.0
-35,0,0,Bare ground,2.0
-36,39,39,Grassland,5.0
-37,18,18,Woodland,5.0
-38,31,31,Thorny Scrub,5.0
-39,11,11,Bare ground,5.0
-40,6,6,Grassland,0.0
-41,24,24,Woodland,0.0
-42,70,70,Thorny Scrub,0.0
-43,0,0,Bare ground,0.0
-44,30,30,Grassland,0.5
-45,34,34,Woodland,0.5
-46,36,36,Thorny Scrub,0.5
-47,0,0,Bare ground,0.5
-48,36,36,Grassland,1.0
-49,29,29,Woodland,1.0
-50,35,35,Thorny Scrub,1.0
-51,0,0,Bare ground,1.0
-52,44,44,Grassland,2.0
-53,25,25,Woodland,2.0
-54,31,31,Thorny Scrub,2.0
-55,0,0,Bare ground,2.0
-56,10,10,Grassland,5.0
-57,53,53,Woodland,5.0
-58,37,37,Thorny Scrub,5.0
-59,0,0,Bare ground,5.0
+,Grassland Initial,Grassland End,Woodland Initial,Woodland End,Thorny Scrub Initial,Thorny Scrub End,Stocking Density,Run Number
+1,49,8,3,90,48,2,0.0,1
+2,88,3,6,1,6,97,0.5,2
+3,37,98,30,0,33,2,1.0,3
+4,47,100,23,0,29,0,2.0,4
+5,43,100,6,0,51,0,5.0,5

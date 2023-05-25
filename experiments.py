@@ -6,26 +6,23 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-# first function checks the existence of alternative stable states under current conditions
-# second function compared to if rewilding hadn't happened (roe deer there, but no large herbivores)
-
-
-def check_resilience():
-
+def experiment_growth():
+    
     # pick the best parameter set
     best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
 
-    # pick a few starting conditions 
-    stocking_changes = [0, 0.5, 1, 2, 5]
+    # pick a few growth rates
+    growth_changes = [0, 0.1, 0.25, 0.5, 0.75, 1]
+    # pick duration (in months)
+    duration = [6, 12, 24, 36, 48, 60] 
 
     # for each starting condition, run the model from 2005 and keep track of final conditions
+    final_results_list = []
     run_number = 0
-    final_df = {}
-
 
     # take the accepted parameters, and go row by row, running the model
-    for i in range(5):
-        for i in stocking_changes:
+    for i in growth_changes:
+        for x in duration:
             
             chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item()
             chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item()
@@ -37,27 +34,10 @@ def check_resilience():
             chance_grassOutcompetedByScrub = best_parameter["chance_grassOutcompetedByScrub"].item()
             chance_scrub_saves_saplings = best_parameter["chance_scrub_saves_saplings"].item()
 
-
-            initial_roe = int(12 * i)
-
-            if run_number == 1: 
-                # do the "True" run
-                initial_wood = 0.058
-                initial_grass = 0.899
-                initial_scrub = 0.043
-
-            else:
-                initial_wood = random.uniform(0, 1)
-                initial_grass = random.uniform(0, 1)
-                initial_scrub = random.uniform(0, 1)
-                initial_veg = [initial_wood, initial_grass, initial_scrub]
-
-                # normalize them if they're greater than 100%
-                if (initial_wood+initial_grass+initial_scrub) > 1:
-                    norm = [float(i)/sum(initial_veg) for i in initial_veg]
-                    initial_wood = norm[0]
-                    initial_grass = norm[1]
-                    initial_scrub = norm[2]
+            initial_roe = 12
+            initial_wood = 0.899
+            initial_grass = 0.043
+            initial_scrub = 0.058
 
             roe_deer_reproduce = best_parameter["roe_deer_reproduce"].item()
             roe_deer_gain_from_grass =  best_parameter["roe_deer_gain_from_grass"].item()
@@ -114,18 +94,17 @@ def check_resilience():
             european_elk_gain_from_young_scrub =  random.uniform(red_deer_gain_from_young_scrub-(red_deer_gain_from_young_scrub*0.1), red_deer_gain_from_young_scrub)
 
             # forecasting parameters
-            fallowDeer_stocking_forecast = int(247 * i)
-            cattle_stocking_forecast = int(81 * i)
-            redDeer_stocking_forecast = int(35 * i)
-            tamworthPig_stocking_forecast = int(7 * i)
-            exmoor_stocking_forecast = int(15 * i)
-
+            fallowDeer_stocking_forecast = 247
+            cattle_stocking_forecast = 81
+            redDeer_stocking_forecast = 35
+            tamworthPig_stocking_forecast = 7
+            exmoor_stocking_forecast = 15
 
             # experiment parameters
-            exp_chance_reproduceSapling = 0
-            exp_chance_reproduceYoungScrub =  0
-            exp_chance_regrowGrass = 0
-            duration = 0
+            exp_chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item() * i
+            exp_chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item() * i
+            exp_chance_regrowGrass =  best_parameter["chance_regrowGrass"].item() * i
+            duration = x
 
             random.seed(1)
             np.random.seed(1)
@@ -144,7 +123,8 @@ def check_resilience():
                                 chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                                 exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration,
                                 reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                                experiment_growth = False, experiment_wood = False)
+                                experiment_growth = True, experiment_wood = False
+                                )
 
 
             model.reset_randomizer(seed=1)
@@ -156,26 +136,32 @@ def check_resilience():
 
             results = model.datacollector.get_model_vars_dataframe()
 
-            # we only want to look at the habitat types
-            habs_only = results[['Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Roe deer']]
-            initial = habs_only.iloc[0]
-            end = habs_only.iloc[-1]
+            # remember the growth rates and duration used
 
-            # collect their conditions
-            final_df[run_number] = {"Grassland Initial": initial['Grassland'].item(), "Grassland End": end['Grassland'].item(), 
-                                    "Woodland Initial": initial['Woodland'].item(), "Woodland End": end['Woodland'].item(), 
-                                    "Thorny Scrub Initial": initial['Thorny Scrub'].item(), "Thorny Scrub End": end['Thorny Scrub'].item(), 
-                                    "Stocking Density": i,
-                                    "Run Number": run_number
-            }
+            # check the time-series output
+
+
+            # we only want to look at the habitat types
+            habs_only = results[['Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground']]
+
+            # collect their time-series data, growth rate perturbation, and duration
+            final_df =  pd.DataFrame(
+                        (habs_only.values.flatten()), columns=['Abundance'])
+            final_df["Time"] = pd.DataFrame(np.concatenate([np.repeat(habs_only['Time'], 4)], axis=0))
+            final_df["Ecosystem Element"] = pd.DataFrame(["Grassland", "Woodland", "Thorny Scrub", "Bare ground"])
+            final_df["Growth Rate Change"] = pd.DataFrame(np.concatenate([np.repeat(i,4)], axis=0))
+            final_df["Duration"] = pd.DataFrame(np.concatenate([np.repeat(x,4)], axis=0))
+
+            final_results_list.append(final_df)
+
 
 
     # append to dataframe
-    forecasting = pd.DataFrame.from_dict(final_df, "index")
-
+    forecasting = pd.concat(final_results_list).reset_index(drop=True)
     print(forecasting)
 
-    forecasting.to_csv("resilience_landscape.csv")
+    forecasting.to_csv("experiment_growth.csv")
 
 
-check_resilience()
+
+experiment_growth()
