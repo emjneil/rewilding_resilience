@@ -29,7 +29,7 @@ class KneppModel(mesa.Model):
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                         exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                         reintroduction, introduce_euroBison, introduce_elk, 
-                        experiment_growth, experiment_wood):
+                        experiment_growth, experiment_wood, experiment_linear_growth):
 
         # add the schedule and experiments 
         self.schedule = RandomActivationByBreed(self)
@@ -38,6 +38,7 @@ class KneppModel(mesa.Model):
         self.introduce_elk = introduce_elk
         self.experiment_growth = experiment_growth
         self.experiment_wood = experiment_wood
+        self.experiment_linear_growth = experiment_linear_growth
 
 
         # first define the space and add the field polygon agents
@@ -895,15 +896,16 @@ class KneppModel(mesa.Model):
                                     # # # # # # # EXPERIMENT 1: Lower growth rates for a duration - do this every time step  # # # # # # # 
 
                 # change to 1742
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
 
 
                                     # # # # # # # EXPERIMENT 2: reduce woodland - do this only once # # # # # # # 
@@ -915,7 +917,17 @@ class KneppModel(mesa.Model):
                         original_value = field.edibles["trees"]
                         field.edibles["trees"] = int(original_value * self.tree_reduction)
 
+
+
                                     
+                                    # # # # # # # EXPERIMENT 3: gradually increase vegetation growth rates; 1% per year # # # # # # # 
+
+
+                if self.experiment_linear_growth == True and self.schedule.time >= 1788:
+                    self.chance_reproduceSapling += 0.01
+                    self.chance_reproduceYoungScrub += 0.01
+                    self.chance_regrowGrass += 0.01
+
                                     
                                     
                                     # # # # # # # IS IT AT EQUILIBRIUM? # # # # # # # 
@@ -925,11 +937,9 @@ class KneppModel(mesa.Model):
                 # get the time-step of five years previously; if it hasn't changed, stop
                 results = self.datacollector.get_model_vars_dataframe() 
                 ten_years_ago = self.schedule.time - 120
-                one_month_ago = self.schedule.time - 1
 
-
-                # CHECK once per year if it's at equilibrium
-                if self.experiment_growth == False and self.experiment_wood == False and (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
+                # check once per year if it's at equilibrium
+                if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
                     print("finished at", self.schedule.time)
                     self.running == False
 
@@ -945,7 +955,13 @@ class KneppModel(mesa.Model):
                         print("finished at", self.schedule.time)
                         self.running == False
 
+                # experiment 3 never reaches equilibrium so stop it 100yrs after equilibrium:
+                if self.experiment_linear_growth == True and self.schedule.time == 2988:
+                    print("done")
+                    self.running == False
 
+
+                # otherwise keep going
                 else: 
                     # print("continuing:", self.schedule.time)
                     results = self.datacollector.get_model_vars_dataframe()
@@ -985,19 +1001,19 @@ class KneppModel(mesa.Model):
                             self.remove_herbivores(european_elk_agent, number_to_remove)
 
 
+
             # April 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 2:
-
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
-
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Fallow deer'] > self.fallowDeer_stocking_forecast:
                     number_to_subtract = int(-self.fallowDeer_stocking_forecast + int(results.iloc[-1]['Fallow deer']))
@@ -1009,15 +1025,16 @@ class KneppModel(mesa.Model):
 
             # May 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 3:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Tamworth pigs'] > self.tamworthPig_stocking_forecast:
                     number_to_subtract = random.randint(0,self.tamworthPig_stocking_forecast)
@@ -1026,15 +1043,16 @@ class KneppModel(mesa.Model):
 
             # June 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 4:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] >= self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1043,15 +1061,16 @@ class KneppModel(mesa.Model):
 
             # July 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 5:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] >= self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1060,15 +1079,16 @@ class KneppModel(mesa.Model):
 
             # August 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 6:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1083,15 +1103,16 @@ class KneppModel(mesa.Model):
 
             # Sept 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 7:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1103,15 +1124,16 @@ class KneppModel(mesa.Model):
 
             # Oct 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 8:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1120,15 +1142,16 @@ class KneppModel(mesa.Model):
 
             # Nov 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 9:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1143,15 +1166,16 @@ class KneppModel(mesa.Model):
 
             # Dec 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 10:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1171,15 +1195,16 @@ class KneppModel(mesa.Model):
 
             # Jan 2022
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 11:
-                if self.experiment_growth == True and self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] >self.cattle_stocking_forecast:
                     number_to_subtract = random.randint(0,self.cattle_stocking_forecast)
@@ -1197,15 +1222,16 @@ class KneppModel(mesa.Model):
 
             # Feb 2022: cull them all back to stocking values
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 12:
-                if self.experiment_growth == True and self.schedule.time >= 50 and (self.schedule.time < (50 + self.duration)):
-                    # collect my initial time
-                    self.chance_reproduceSapling = self.exp_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.exp_chance_regrowGrass
-                else: 
-                    self.chance_reproduceSapling = self.original_chance_reproduceSapling
-                    self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
-                    self.chance_regrowGrass = self.original_chance_regrowGrass
+                if self.experiment_growth == True:
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
+                        # collect my initial time
+                        self.chance_reproduceSapling = self.exp_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.exp_chance_regrowGrass
+                    else: 
+                        self.chance_reproduceSapling = self.original_chance_reproduceSapling
+                        self.chance_reproduceYoungScrub = self.original_chance_reproduceYoungScrub
+                        self.chance_regrowGrass = self.original_chance_regrowGrass
                 results = self.datacollector.get_model_vars_dataframe()
                 if results.iloc[-1]['Longhorn cattle'] > self.cattle_stocking_forecast:
                     number_to_subtract = int(-self.cattle_stocking_forecast + int(results.iloc[-1]['Longhorn cattle']))
@@ -1227,8 +1253,7 @@ class KneppModel(mesa.Model):
         for i in range(5000):
             if self.running == True: 
                 self.step()
-
-        results = self.datacollector.get_model_vars_dataframe()
-
-        return results
-
+            else:
+                break
+        
+        return self.datacollector.get_model_vars_dataframe()

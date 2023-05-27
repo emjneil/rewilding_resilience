@@ -152,7 +152,7 @@ def check_resilience():
                             chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                             exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                             reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                            experiment_growth = False, experiment_wood = False)
+                            experiment_growth = False, experiment_wood = False, experiment_linear_growth = False)
 
 
         model.reset_randomizer(seed=1)
@@ -176,6 +176,8 @@ def check_resilience():
                                 "Stocking Density": i,
                                 "Run Number": run_number
         }
+
+        print(final_df)
 
 
     # append to dataframe
