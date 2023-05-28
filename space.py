@@ -17,14 +17,13 @@ class FieldSpace(mg.GeoSpace):
             self._id_region_map[agent.unique_id] = agent
     
     def add_herbivore_agent(self, herbivore, field_id):
- 
         herbivore.field_id = field_id
         herbivore.geometry = self._id_region_map[field_id].random_point()
         super().add_agents(herbivore)
 
-    def remove_herbivore_agent(self, person):
-        person.field_id = None
-        super().remove_agent(person)
+    def remove_herbivore_agent(self, agent):
+        agent.field_id = None
+        super().remove_agent(agent)
 
     def get_region_by_id(self, unique_id) -> FieldAgent:
         return self._id_region_map.get(unique_id)
