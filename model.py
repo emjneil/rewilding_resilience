@@ -924,9 +924,13 @@ class KneppModel(mesa.Model):
 
 
                 if self.experiment_linear_growth == True and self.schedule.time >= 1788:
-                    self.chance_reproduceSapling += 0.01
-                    self.chance_reproduceYoungScrub += 0.01
-                    self.chance_regrowGrass += 0.01
+                    self.chance_reproduceSapling += 0.01 
+                    if self.chance_reproduceSapling > 1: self.chance_reproduceSapling = 1
+                    self.chance_reproduceYoungScrub += 0.01 
+                    if self.chance_reproduceYoungScrub > 1: self.chance_reproduceYoungScrub = 1
+                    self.chance_regrowGrass += 0.01 
+                    if self.chance_regrowGrass > 1: self.chance_regrowGrass = 1
+
 
                                     
                                     
@@ -938,27 +942,28 @@ class KneppModel(mesa.Model):
                 results = self.datacollector.get_model_vars_dataframe() 
                 ten_years_ago = self.schedule.time - 120
 
-                # check once per year if it's at equilibrium
-                if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
-                    print("finished at", self.schedule.time)
-                    self.running == False
+                # check once per year if it's at equilibrium or if roe deer explode
+                if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= 6000 or (results.iloc[-1]["Roe deer"] >= 500) or (results.iloc[-1]["Roe deer"] == 0):                                    
+                    print("finished at", self.schedule.time, results.iloc[-1]["Roe deer"])
+                    self.running = False
+
 
                 # but if experiments are running, make sure it has at least 1 yr to run to equilibrium
                 if self.experiment_growth == True and self.schedule.time >=  (1788 + 12):
                     if (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
                         print("finished at", self.schedule.time)
-                        self.running == False
+                        self.running = False
 
                 # but if experiments are running, make sure it has at least 1 yr to run to equilibrium
                 if self.experiment_wood == True and self.schedule.time >=  (1788 + 12):
                     if (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
                         print("finished at", self.schedule.time)
-                        self.running == False
+                        self.running = False
 
                 # experiment 3 never reaches equilibrium so stop it 100yrs after equilibrium:
                 if self.experiment_linear_growth == True and self.schedule.time == 2988:
                     print("done")
-                    self.running == False
+                    self.running = False
 
 
                 # otherwise keep going
@@ -1250,10 +1255,7 @@ class KneppModel(mesa.Model):
 
 
     def run_model(self): 
-        for i in range(5000):
-            if self.running == True: 
-                self.step()
-            else:
-                break
-        
+        while self.running == True: 
+            self.step()
+
         return self.datacollector.get_model_vars_dataframe()
