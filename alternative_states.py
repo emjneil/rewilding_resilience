@@ -166,6 +166,7 @@ def check_resilience():
 
         # we only want to look at the habitat types
         habs_only = results[['Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Roe deer']]
+
         initial = habs_only.iloc[0]
         end = habs_only.iloc[-1]
 
