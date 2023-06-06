@@ -177,8 +177,12 @@ def create_params():
     # check out the parameters used
     final_parameters = pd.DataFrame(data=final_parameters, columns=parameter_names)
 
+    print("finished generating parameters")
+
     # and save it to csv
     final_parameters.to_csv('all_parameters_1.csv')
+
+
 
 
 
@@ -195,6 +199,8 @@ def run_model():
     final_parameters = pd.read_csv("all_parameters_1.csv").drop("Unnamed: 0", axis=1)
 
     final_results_list = []
+    failed_roe = 0
+    failed_equilibrium = 0
 
     for index, row in final_parameters.iterrows():
 
@@ -322,21 +328,25 @@ def run_model():
 
         model.run_model()
 
-        run_number +=1
-        print(run_number)
 
         # remember the results of the model (dominant conditions, # of agents)
         results = model.datacollector.get_model_vars_dataframe()
         results['run_number'] =  row["run_number"]
 
+
+        # get the last year
+        end = results.iloc[-1]
         # did it pass the roe non-explosion/collapse requirements? 
         if end["Time"] < 5999:
-            print("failed roe")
-            break
+            failed_roe += 1
+            print("failed roe", failed_roe)
         
+
         else:
-            # what was the gradient? look at the last year for uncontrolled species
-            uncontrolled_only = results[['Grassland', 'Woodland', 'Thorny Scrub', 'Roe deer']].iloc[-1]
+            # calculate gradient - has it reached equilibrium?
+            last_hundred = results.loc[results["Time"] >= 4800]
+            # only species I care about - ones that aren't controlled
+            uncontrolled_only = last_hundred[['Grassland', 'Woodland', 'Thorny Scrub', 'Roe deer']]
             
             gradients = {}
 
@@ -351,17 +361,27 @@ def run_model():
                 gradient = coefficients[0]
                 # Store the gradient in the dictionary
                 gradients[column] = gradient
-
+            
+            print(gradients)
             # if it's at equilibrium, save it
-            if abs(gradients["Roe deer"]) < 0.05 or abs(gradients["Thorny Scrub"]) < 0.05 or abs(gradients["Grassland"]) < 0.05 or abs(gradients["Woodland"]) < 0.05:
+            if abs(gradients["Roe deer"]) < 0.05 and abs(gradients["Thorny Scrub"]) < 0.05 and abs(gradients["Grassland"]) < 0.05 and abs(gradients["Woodland"]) < 0.05:
                 # save it
                 final_results_list.append(results)
+            else: 
+                failed_equilibrium += 1
+                print("failed equilibrium:", failed_equilibrium)
 
 
 
-    # append to dataframe
+
+    # save those that failed ecological criteria
+    with open('failed_ecological_1.txt', 'w') as f:
+        lines = ["failed roe deer:", str(failed_roe), "failed equilibrium:", str(failed_equilibrium)]
+        f.writelines(lines)
+
+
+    # append accepted ones to dataframe
     final_results = pd.concat(final_results_list)
-
 
     # which filters were the most difficult to pass?
     difficult_filters = pd.DataFrame({
