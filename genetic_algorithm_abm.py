@@ -11,7 +11,7 @@ import random
 
 # ------ Optimization of the Knepp ABM model --------
 
-print("running 1")
+print("running 23")
 
 def objectiveFunction(x):
 
@@ -140,8 +140,7 @@ def objectiveFunction(x):
 
     # if it's < 6000, return a high number (means roe deer were too high)
     if end["Time"] < 5999:
-        print("failed", end["Roe deer"])
-        return 1000-(abs(end["Roe deer"]-50))
+        return 10000
 
 
     else:
@@ -241,21 +240,21 @@ def run_optimizer():
 
 
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':15,
+    algorithm_param = {'max_num_iteration':10,
                     'population_size':100,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
                     'parents_portion': 0.3,\
                     'crossover_type':'uniform',\
-                    'max_iteration_without_improv': 8}
+                    'max_iteration_without_improv': 5}
 
 
     optimization =  ga(function = objectiveFunction, dimension = 44, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('optim_outputs_1.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('optim_outputs_23.xlsx', header=False, index=False)
     return optimization.output_dict
 
 

@@ -944,7 +944,6 @@ class KneppModel(mesa.Model):
 
                 # check once per year if it's at equilibrium or if roe deer explode
                 if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= 6000 or (results.iloc[-1]["Roe deer"] >= 500) or (results.iloc[-1]["Roe deer"] == 0):                                    
-                    print("finished at", self.schedule.time, results.iloc[-1]["Roe deer"])
                     self.running = False
 
 
