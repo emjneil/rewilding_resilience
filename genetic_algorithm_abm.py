@@ -11,7 +11,7 @@ import random
 
 # ------ Optimization of the Knepp ABM model --------
 
-print("running 2")
+print("running 37")
 
 def objectiveFunction(x):
 
@@ -170,10 +170,8 @@ def objectiveFunction(x):
             # Store the gradient in the dictionary
             gradients[column] = gradient
 
-        print(gradients)
-
         # if it's not at equilibrium, fail it
-        if abs(gradients["Roe deer"]) > 0.05 or abs(gradients["Thorny Scrub"]) > 0.05 or abs(gradients["Grassland"]) > 0.05 or abs(gradients["Woodland"]) > 0.05:
+        if abs(gradients["Roe deer"]) > 0.01 or abs(gradients["Thorny Scrub"]) > 0.01 or abs(gradients["Grassland"]) > 0.01 or abs(gradients["Woodland"]) > 0.01:
             print("not at equilibrium", gradients)
             return 5000
 
@@ -204,7 +202,6 @@ def objectiveFunction(x):
                 ((((statistics.mean(list(results.loc[results['Time'] > 121, 'Tamworth pigs'])))-15)/15)**2)
                 )
 
-
             # only print the last year's result if it's reasonably close to the filters
             if filtered_result < 10:
                 print("r:", filtered_result)
@@ -218,14 +215,15 @@ def objectiveFunction(x):
             return filtered_result
    
 
+
 def run_optimizer():
     # Define the bounds
     bds = np.array([
-        [0,0.15],[0,1],[0,1],[0.0017,0.0083],[0.0024,0.028],
+        [0,0.1],[0,1],[0,1],[0.0017,0.0083],[0.0024,0.028],
         [0,1], # mature scrub competition
         [0,1],[0,1], # grass competition
         # roe parameters
-        [0,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.1,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # fallow deer parameters
         [0.3,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # red deer
@@ -242,20 +240,20 @@ def run_optimizer():
 
     # popsize and maxiter are defined at the top of the page, was 10x100
     algorithm_param = {'max_num_iteration':10,
-                    'population_size':100,\
+                    'population_size':250,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
                     'parents_portion': 0.3,\
                     'crossover_type':'uniform',\
-                    'max_iteration_without_improv': 5}
+                    'max_iteration_without_improv': 2}
 
 
     optimization =  ga(function = objectiveFunction, dimension = 44, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('optim_outputs_2.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('optim_outputs_37.xlsx', header=False, index=False)
     return optimization.output_dict
 
 

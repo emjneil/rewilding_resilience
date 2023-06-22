@@ -364,7 +364,7 @@ def run_model():
             
             print(gradients)
             # if it's at equilibrium, save it
-            if abs(gradients["Roe deer"]) < 0.05 and abs(gradients["Thorny Scrub"]) < 0.05 and abs(gradients["Grassland"]) < 0.05 and abs(gradients["Woodland"]) < 0.05:
+            if abs(gradients["Roe deer"]) < 0.01 and abs(gradients["Thorny Scrub"]) < 0.01 and abs(gradients["Grassland"]) < 0.01 and abs(gradients["Woodland"]) < 0.01:
                 # save it
                 final_results_list.append(results)
             else: 
