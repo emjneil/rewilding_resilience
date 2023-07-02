@@ -11,7 +11,7 @@ import random
 
 # ------ Optimization of the Knepp ABM model --------
 
-print("running 37")
+print("running 42")
 
 def objectiveFunction(x):
 
@@ -219,28 +219,28 @@ def objectiveFunction(x):
 def run_optimizer():
     # Define the bounds
     bds = np.array([
-        [0,0.1],[0,1],[0,1],[0.0017,0.0083],[0.0024,0.028],
+        [0,0.2],[0,1],[0,1],[0.0017,0.0083],[0.0024,0.028],
         [0,1], # mature scrub competition
         [0,1],[0,1], # grass competition
         # roe parameters
-        [0.1,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.1,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
         # fallow deer parameters
-        [0.3,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.3,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
         # red deer
-        [0.3,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.3,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
         # exmoor pony parameters
-                [0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+                [0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
         # cattle parameters
-        [0,0.5],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0,0.5],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
         # pig parameters
-        [0,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
         # sapling protection parameter
         [0,1]])
 
 
     # popsize and maxiter are defined at the top of the page, was 10x100
     algorithm_param = {'max_num_iteration':10,
-                    'population_size':250,\
+                    'population_size':50,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -253,7 +253,7 @@ def run_optimizer():
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('optim_outputs_37.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('optim_outputs_42.xlsx', header=False, index=False)
     return optimization.output_dict
 
 
