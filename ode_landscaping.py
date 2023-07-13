@@ -13,30 +13,15 @@ import random
 
 species = ['exmoorPony','fallowDeer','grasslandParkland','longhornCattle','redDeer','roeDeer','tamworthPig','thornyScrub','woodland']
 
+
 # we want to check if our original PS passes the requirements or not
-r = [0, 0, 0.91, 0, 0, 0, 0, 0.35, 0.1]
+accepted_parameters = pd.read_csv('ode_best_ps.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
 
+r = accepted_parameters.loc[accepted_parameters['growth'].notnull(), ['growth']]
+r = pd.DataFrame(r.values.reshape(1, len(species)), columns = species).to_numpy().flatten()
 
-A = [
-    # exmoor pony - special case, no growth
-    [0, 0, 2.54, 0, 0, 0, 0, 0.17, 0.42],
-    # fallow deer 
-    [0, 0, 3.87, 0, 0, 0, 0, 0.39, 0.46],
-    # grassland parkland
-    [-0.0023, -0.0033, -0.91, -0.016, -0.0029, -0.001, -0.009, -0.045, -0.048],
-    # longhorn cattle  
-    [0, 0, 5.3, 0, 0, 0, 0, 0.23, 0.42],
-    # red deer  
-    [0, 0, 2.9, 0, 0, 0, 0, 0.29, 0.42],
-    # roe deer 
-    [0, 0, 5, 0, 0, 0, 0, 0.25, 0.39],
-    # tamworth pig 
-    [0, 0, 3.55, 0, 0,0, 0, 0.22, 0.45],  
-    # thorny scrub
-    [-0.0014, -0.0047, 0, -0.0047, -0.0036, -0.0023, -0.0016, -0.014, -0.02],
-    # woodland
-    [-0.0045, -0.0063, 0, -0.0089, -0.0041, -0.0035, -0.0038, 0.0083, -0.006]
-    ]
+A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
+
 
 
 
@@ -76,9 +61,10 @@ def landscaping():
     # pick a few starting conditions - we want the first run to be initial conditions
     initial_stocking = [1]
 
-    stocking_changes = np.random.uniform(low=0,high=100,size=999) # this one is for looking at landscaping
-    stocking_changes = np.insert(stocking_changes, 0, 1, axis=0)
+    # stocking_changes = np.random.uniform(low=0,high=100,size=999) # this one is for looking at landscaping
+    # stocking_changes = np.insert(stocking_changes, 0, 1, axis=0)
 
+    stocking_changes = np.random.uniform(low=1,high=1,size=1000)
 
     # now do initial vegetation values - we start with everything normalised to 1
     initial_wood_list = [1]
@@ -327,11 +313,13 @@ def landscaping():
     all_timeseries = pd.concat(all_timeseries)
 
     # save to csv
-    forecasting.to_csv("resilience_landscape_eem.csv")
-    all_timeseries.to_csv("timeseries_eem.csv")
+    forecasting.to_csv("resilience_landscape_eem_current.csv")
+    all_timeseries.to_csv("timeseries_eem_current.csv")
 
 
 
+
+landscaping()
 
 
 
@@ -349,9 +337,8 @@ def tipping_points():
     all_timeseries = []
 
     # pick a few starting conditions - we want the first run to be initial conditions
-    initial_stocking = [1]
-    stocking_changes = np.random.uniform(low=0,high=0.01,size=9) # this one is for looking at tipping points (smaller view)
-    # stocking_changes = np.insert(stocking_changes, 0, 1, axis=0)
+    stocking_changes = np.random.uniform(low=0.95,high=1.05,size=99) # this one is for looking at tipping points (smaller view)
+    stocking_changes = np.insert(stocking_changes, 0, 1, axis=0)
 
     # calculate the steady state (where X0 = 2020 conditions) - initial condition doesn't matter
     for i in stocking_changes:
@@ -598,4 +585,4 @@ def tipping_points():
     all_timeseries.to_csv("timeseries_tippingpoints_eem.csv")
 
 
-tipping_points()
+# tipping_points()

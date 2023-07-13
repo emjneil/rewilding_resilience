@@ -11,7 +11,7 @@ import random
 
 # ------ Optimization of the Knepp ABM model --------
 
-print("running 42")
+print("running 105")
 
 def objectiveFunction(x):
 
@@ -253,7 +253,7 @@ def run_optimizer():
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('optim_outputs_42.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('optim_outputs_105.xlsx', header=False, index=False)
     return optimization.output_dict
 
 

@@ -49,35 +49,18 @@ def vegetation_reproduction():
         X0 = [0, 0, 1, 0, 0, 1, 0, 1, 1]
 
         # we want to check if our original PS passes the requirements or not
-        r = [0, 0, 0.91, 0, 0, 0, 0, 0.35, 0.1]
+        accepted_parameters = pd.read_csv('ode_best_ps.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
 
-        # interaction matrix
-        A = [
-            # exmoor pony - special case, no growth
-            [0, 0, 2.54, 0, 0, 0, 0, 0.17, 0.42],
-            # fallow deer 
-            [0, 0, 3.87, 0, 0, 0, 0, 0.39, 0.46],
-            # grassland parkland
-            [-0.0023, -0.0033, -0.91, -0.016, -0.0029, -0.001, -0.009, -0.045, -0.048],
-            # longhorn cattle  
-            [0, 0, 5.3, 0, 0, 0, 0, 0.23, 0.42],
-            # red deer  
-            [0, 0, 2.9, 0, 0, 0, 0, 0.29, 0.42],
-            # roe deer 
-            [0, 0, 5, 0, 0, 0, 0, 0.25, 0.39],
-            # tamworth pig 
-            [0, 0, 3.55, 0, 0,0, 0, 0.22, 0.45],  
-            # thorny scrub
-            [-0.0014, -0.0047, 0, -0.0047, -0.0036, -0.0023, -0.0016, -0.014, -0.02],
-            # woodland
-            [-0.0045, -0.0063, 0, -0.0089, -0.0041, -0.0035, -0.0038, 0.0083, -0.006]
-            ]
+        r = accepted_parameters.loc[accepted_parameters['growth'].notnull(), ['growth']]
+        r = pd.DataFrame(r.values.reshape(1, len(species)), columns = species).to_numpy().flatten()
+
+        A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
 
 
         # generate the reproduction changes
-        repro_change = random.choice([-0.5, 0, 0.5, 1, 1.5])
+        repro_change = random.choice([-0.5, -0.1, 0, 0.1, 0.5, 1, 1.5])
         # generate the magnitudes - how many time-steps will it be decreased for? 
-        magnitude = random.randint(1,50)
+        magnitude = random.uniform(0, 50)
 
 
         # # # # First, run it from 2005-2020 # # # #
@@ -227,12 +210,7 @@ def vegetation_reproduction():
             starting_values[3] = 1.5
             starting_values[4] = 2.7
             starting_values[6] = 0.55
-            # look at different starting conditions
-            # if years_covered == 515: 
-            #     starting_values[2] = random.uniform(last_values_2020[2]-(last_values_2020[2]*0.5), last_values_2020[2]+(last_values_2020[2]*0.5))
-            #     starting_values[5] = random.uniform(last_values_2020[5]-(last_values_2020[5]*0.5), last_values_2020[5]+(last_values_2020[5]*0.5))
-            #     starting_values[7] = random.uniform(last_values_2020[7]-(last_values_2020[7]*0.5), last_values_2020[7]+(last_values_2020[7]*0.5))
-            #     starting_values[8] = random.uniform(last_values_2020[8]-(last_values_2020[8]*0.5), last_values_2020[8]+(last_values_2020[8]*0.5))
+
             # perturb it at time 516-magnitude 
             if years_covered <= 516 + magnitude and years_covered >= 516: 
                 r[2] = 0.91 * repro_change
@@ -273,6 +251,7 @@ def vegetation_reproduction():
         y_2["run_number"] = run_number
         y_2["magnitude"] = magnitude
         y_2["repro_changes"] = repro_change
+
         # concat all time-series
         timeseries = pd.concat([y_2, y_future])
         run_number += 1
@@ -293,16 +272,15 @@ def vegetation_reproduction():
 
 
     forecasting = pd.DataFrame.from_dict(final_df, "index")
-    print(forecasting)
     all_timeseries = pd.concat(all_timeseries)
-    print(all_timeseries)
+
 
     # save to csv
     forecasting.to_csv("eem_growth_exp_landscape.csv")
     all_timeseries.to_csv("eem_growth_exp_timeseries.csv")
 
 
-vegetation_reproduction()
+# vegetation_reproduction()
 
 
 
@@ -329,48 +307,24 @@ def stochastic_exp():
     all_timeseries = []
     final_df = {}
 
+
     # run it to 500 years (equilibrium) 
     for i in range(num_simulations):
 
         X0 = [0, 0, 1, 0, 0, 1, 0, 1, 1]
 
         # we want to check if our original PS passes the requirements or not
-        r = [0, 0, 0.91, 0, 0, 0, 0, 0.35, 0.1]
+        accepted_parameters = pd.read_csv('ode_best_ps.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
 
-        # interaction matrix
-        A = [
-            # exmoor pony - special case, no growth
-            [0, 0, 2.54, 0, 0, 0, 0, 0.17, 0.42],
-            # fallow deer 
-            [0, 0, 3.87, 0, 0, 0, 0, 0.39, 0.46],
-            # grassland parkland
-            [-0.0023, -0.0033, -0.91, -0.016, -0.0029, -0.001, -0.009, -0.045, -0.048],
-            # longhorn cattle  
-            [0, 0, 5.3, 0, 0, 0, 0, 0.23, 0.42],
-            # red deer  
-            [0, 0, 2.9, 0, 0, 0, 0, 0.29, 0.42],
-            # roe deer 
-            [0, 0, 5, 0, 0, 0, 0, 0.25, 0.39],
-            # tamworth pig 
-            [0, 0, 3.55, 0, 0,0, 0, 0.22, 0.45],  
-            # thorny scrub
-            [-0.0014, -0.0047, 0, -0.0047, -0.0036, -0.0023, -0.0016, -0.014, -0.02],
-            # woodland
-            [-0.0045, -0.0063, 0, -0.0089, -0.0041, -0.0035, -0.0038, 0.0083, -0.006]
-            ]
+        r = accepted_parameters.loc[accepted_parameters['growth'].notnull(), ['growth']]
+        r = pd.DataFrame(r.values.reshape(1, len(species)), columns = species).to_numpy().flatten()
+
+        A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
 
 
-        # how much will we decrease woodland by? 
-        woodland_decrease = random.uniform(-1,0)
-        # woodland_decrease = random.choice([-1, -0.5, -0.25, -0.1, -0.01, 0])
+        # is there a critical amount of noise?
+        noise_amount = random.choice([0, 0.001, 0.002, 0.003])
 
-        # generate the stochastic number - can be pos or neg
-        # perturbation_strength = random.choice([-1, -0.5, -0.1, -0.01, 0, 0.01, 0.1, 0.5, 1])
-        perturbation_strength = random.choice([-0.1, 0, 0.1])
-        noise_amount = random.choice([0.001, 0.005, 0.01])
-
-        # we start with no noise
-        noise = 0
 
         # # # # First, run it from 2005-2020 # # # #
 
@@ -511,6 +465,10 @@ def stochastic_exp():
         combined_future_times = []
         all_noise = []
 
+        # start with mean of 1 and sd of 0
+        sd = 0
+        noise = np.random.normal(1, sd, 1).item()
+
     
         for y in range(1000): 
             years_covered += 1
@@ -525,11 +483,9 @@ def stochastic_exp():
             # apply the perturbations; don't let it go below 0
             if years_covered >= 516: 
                 # increase the amount of noise over time
-                noise += noise_amount
+                sd += noise_amount
                 # noise term is SD and at every point, choose a random normal value that has mean of 0 and that SD.
-
-                # perturb it at time 516-magnitude 
-                overall_perturbation = perturbation_strength + random.choice([(-1 * noise), noise]) # noise can be pos or neg
+                noise = np.random.normal(1, sd, 1).item()
                 # change the repro rate              
                 r[2] = 0.91 * noise
                 r[7] = 0.35 * noise
@@ -540,7 +496,7 @@ def stochastic_exp():
                 r[8] = 0.1
             # after 100 years of perturbations (616) decrease woodland percentages by a number
             if years_covered == 616: 
-                starting_values[8] = last_values_2020[8] + (last_values_2020[8] * woodland_decrease)
+                starting_values[8] = last_values_2020[8] * 0.5
             else:
                 starting_values[8] = last_values_2020[8]
 
@@ -565,9 +521,7 @@ def stochastic_exp():
         # put into df
         y_future['time'] = combined_future_times
         y_future["run_number"] = run_number
-        y_future["Growth Rate Change"] = perturbation_strength
         y_future["Noise"] = noise_amount
-        y_future["Woodland Loss"] = woodland_decrease
 
         # get 2005-2020 time-series
         combined_runs = np.hstack((results.y, second_ABC.y, third_ABC.y, fourth_ABC.y, fifth_ABC.y, sixth_ABC.y, seventh_ABC.y, ABC_2015.y, ABC_2016.y, ABC_2017.y, ABC_2018.y, ABC_2019.y, ABC_2020.y))
@@ -577,9 +531,7 @@ def stochastic_exp():
         y_2 = pd.DataFrame(data=y_2, columns=species)
         y_2['time'] = combined_times
         y_2["run_number"] = run_number
-        y_2["Growth Rate Change"] = perturbation_strength
         y_2["Noise"] = 0
-        y_2["Woodland Loss"] = woodland_decrease
         # concat all time-series
         timeseries = pd.concat([y_2, y_future])
         run_number += 1
@@ -591,9 +543,7 @@ def stochastic_exp():
         final_df[run_number] = {"Grassland Initial": 89.9, "Grassland End": end[2]*89.9, 
                                 "Woodland Initial": 5.8, "Woodland End":  end[8]*5.8, 
                                 "Thorny Scrub Initial": 4.3, "Thorny Scrub End":  end[7]*4.3, 
-                                "Perturbation Strength": perturbation_strength,
                                 "Noise": all_noise,
-                                "Woodland loss": woodland_decrease,
                                 "Run Number": run_number
         }
 
@@ -611,4 +561,92 @@ def stochastic_exp():
 
 
 
-# stochastic_exp()
+stochastic_exp()
+
+
+
+
+def tipping_point_veg():
+
+
+    # put it in middle location
+
+    num_simulations = 90
+    # run number
+    run_number = 0
+
+    # keep track of the time-series and final conditions
+    all_timeseries = []
+    final_df = {}
+
+    # run it to 500 years (equilibrium) 
+    for i in range(num_simulations):
+
+        grass = random.uniform(0, 0.08)
+        # grass = random.uniform(0,0.00000001)
+        roe = random.uniform(2.4, 3.2)
+        thorny = random.uniform(6.1, 6.7)
+        wood = random.uniform(9.4, 10.1)
+
+        # we want to check if our original PS passes the requirements or not
+        accepted_parameters = pd.read_csv('ode_best_ps.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
+
+        r = accepted_parameters.loc[accepted_parameters['growth'].notnull(), ['growth']]
+        r = pd.DataFrame(r.values.reshape(1, len(species)), columns = species).to_numpy().flatten()
+
+        A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
+
+
+        # # # # First, run it from 2005-2020 # # # #
+
+        years_covered = 500
+        combined_future_runs = []
+        combined_future_times = []
+        
+        X0 = [0.65, 5.9, grass, 1.5, 2.7, roe, 0.55, thorny, wood]
+
+        for y in range(1000): 
+            years_covered += 1
+            # run the model for that year 
+
+            X0[0] = 0.65
+            X0[1] = 5.9
+            X0[3] = 1.5
+            X0[4] = 2.7
+            X0[6] = 0.55
+
+            # keep track of time
+            t_steady = np.linspace(years_covered, years_covered+0.75, 3)
+            # run model
+            ABC_future = solve_ivp(ecoNetwork, (years_covered, years_covered+0.75), X0,  t_eval = t_steady, args=(A, r), method = 'RK23')   
+            # append last values
+            X0 = ABC_future.y[0:11, 2:3].flatten()
+
+            # and save the outputs
+            combined_future_runs.append(ABC_future.y)
+            combined_future_times.append(ABC_future.t)
+
+        combined_future = np.hstack(combined_future_runs)
+        combined_future_times = np.hstack(combined_future_times)
+        timeseries = (np.vstack(np.hsplit(combined_future.reshape(len(species), 3000).transpose(),1)))
+        timeseries = pd.DataFrame(data=timeseries, columns=species)
+        timeseries['time'] = combined_future_times
+        timeseries["run_number"] = run_number
+        timeseries["New Equilibrium"] = "No"
+
+        # concat all time-series
+        run_number += 1
+        print(run_number)
+
+
+        all_timeseries.append(timeseries)
+
+
+    all_timeseries = pd.concat(all_timeseries)
+
+
+    # save to csv
+    all_timeseries.to_csv("eem_growth_exp_tipping.csv")
+
+
+# tipping_point_veg()
