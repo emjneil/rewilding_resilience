@@ -28,10 +28,8 @@ class KneppModel(mesa.Model):
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                         exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
-                        far_fallowDeer_stocking_forecast, far_cattle_stocking_forecast, far_redDeer_stocking_forecast, far_tamworthPig_stocking_forecast, far_exmoor_stocking_forecast,
                         reintroduction, introduce_euroBison, introduce_elk, 
-                        experiment_growth, experiment_wood, experiment_linear_growth, run_ga):
-
+                        experiment_growth, experiment_wood, experiment_linear_growth):
 
         # add the schedule and experiments 
         self.schedule = RandomActivationByBreed(self)
@@ -41,7 +39,6 @@ class KneppModel(mesa.Model):
         self.experiment_growth = experiment_growth
         self.experiment_wood = experiment_wood
         self.experiment_linear_growth = experiment_linear_growth
-        self.run_ga = run_ga
 
 
         # first define the space and add the field polygon agents
@@ -141,13 +138,6 @@ class KneppModel(mesa.Model):
         self.exp_chance_regrowGrass = exp_chance_regrowGrass
         self.duration = duration
         self.tree_reduction = tree_reduction
-        # ga experiments
-        self.far_fallowDeer_stocking_forecast = far_fallowDeer_stocking_forecast
-        self.far_cattle_stocking_forecast = far_cattle_stocking_forecast
-        self.far_redDeer_stocking_forecast = far_redDeer_stocking_forecast
-        self.far_tamworthPig_stocking_forecast =  far_tamworthPig_stocking_forecast
-        self.far_exmoor_stocking_forecast = far_exmoor_stocking_forecast
-
 
 
         # then add the herbivores as points
@@ -907,7 +897,7 @@ class KneppModel(mesa.Model):
 
                 # change to 1742
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -921,7 +911,7 @@ class KneppModel(mesa.Model):
                                     # # # # # # # EXPERIMENT 2: reduce woodland - do this only once # # # # # # # 
 
 
-                if self.experiment_wood == True and self.schedule.time == 2052:
+                if self.experiment_wood == True and self.schedule.time == 1788:
                     # reduce all trees
                     for field in self.fields:
                         original_value = field.edibles["trees"]
@@ -933,88 +923,46 @@ class KneppModel(mesa.Model):
                                     # # # # # # # EXPERIMENT 3: gradually increase vegetation growth rates; 1% per year # # # # # # # 
 
 
-<<<<<<< HEAD
-                if self.experiment_linear_growth == True and self.schedule.time >= 2052:
-=======
                 if self.experiment_linear_growth == True and self.schedule.time >= 1788:
->>>>>>> e14d87a614dc922ccbbb5c5dc43a50a3ec0ee819
                     self.chance_reproduceSapling += 0.01 
                     if self.chance_reproduceSapling > 1: self.chance_reproduceSapling = 1
                     self.chance_reproduceYoungScrub += 0.01 
                     if self.chance_reproduceYoungScrub > 1: self.chance_reproduceYoungScrub = 1
                     self.chance_regrowGrass += 0.01 
                     if self.chance_regrowGrass > 1: self.chance_regrowGrass = 1
-<<<<<<< HEAD
-=======
 
->>>>>>> e14d87a614dc922ccbbb5c5dc43a50a3ec0ee819
 
                                     
                                     
-
-
                                     # # # # # # # IS IT AT EQUILIBRIUM? # # # # # # # 
 
 
 
                 # get the time-step of five years previously; if it hasn't changed, stop
                 results = self.datacollector.get_model_vars_dataframe() 
-                ten_years_ago = self.schedule.time - 12
+                ten_years_ago = self.schedule.time - 120
 
-<<<<<<< HEAD
-                # check once per year if it's at equilibrium
-                if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
-                    print("finished at", self.schedule.time)
-                    self.running = False
-=======
                 # check once per year if it's at equilibrium or if roe deer explode
                 if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= 6000 or (results.iloc[-1]["Roe deer"] >= 500) or (results.iloc[-1]["Roe deer"] == 0):                                    
                     self.running = False
 
->>>>>>> e14d87a614dc922ccbbb5c5dc43a50a3ec0ee819
 
                 # but if experiments are running, make sure it has at least 1 yr to run to equilibrium
-                if self.experiment_growth == True and self.schedule.time >=  (2052 + 12):
+                if self.experiment_growth == True and self.schedule.time >=  (1788 + 12):
                     if (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
-<<<<<<< HEAD
-                        # run genetic algorithm
-                        if self.run_ga == True:
-                            # change stocking densities until it's at equilibrium again
-                            self.fallowDeer_stocking_forecast = self.far_fallowDeer_stocking_forecast
-                            self.cattle_stocking_forecast = self.far_cattle_stocking_forecast
-                            self.redDeer_stocking_forecast =  self.far_redDeer_stocking_forecast
-                            self.tamworthPig_stocking_forecast =  self.far_tamworthPig_stocking_forecast
-                            self.exmoor_stocking_forecast = self.far_exmoor_stocking_forecast
-                            # CHANGE THIS to the time step it reached equilibrium at
-                            if self.schedule.time >= (2052 + 120) and (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
-                                print("finished at", self.schedule.time)
-                                self.running = False
-                        else:
-                            print("finished at", self.schedule.time)
-                            self.running = False
-
-=======
                         print("finished at", self.schedule.time)
                         self.running = False
->>>>>>> e14d87a614dc922ccbbb5c5dc43a50a3ec0ee819
 
                 # but if experiments are running, make sure it has at least 1 yr to run to equilibrium
-                if self.experiment_wood == True and self.schedule.time >=  (2052 + 12):
+                if self.experiment_wood == True and self.schedule.time >=  (1788 + 12):
                     if (abs(results.iloc[-1]["Grassland"]-results.iloc[ten_years_ago]["Grassland"]) < 5) and (abs(results.iloc[-1]["Thorny Scrub"]-results.iloc[ten_years_ago]["Thorny Scrub"]) < 5) and (abs(results.iloc[-1]["Woodland"]-results.iloc[ten_years_ago]["Woodland"]) < 5) and (abs(results.iloc[-1]["Roe deer"]-results.iloc[ten_years_ago]["Roe deer"]) < 5):                                    
                         print("finished at", self.schedule.time)
                         self.running = False
 
                 # experiment 3 never reaches equilibrium so stop it 100yrs after equilibrium:
-<<<<<<< HEAD
-                if self.experiment_linear_growth == True and self.schedule.time == 3252:
-                    self.running = False
-
-
-=======
                 if self.experiment_linear_growth == True and self.schedule.time == 2988:
                     print("done")
                     self.running = False
->>>>>>> e14d87a614dc922ccbbb5c5dc43a50a3ec0ee819
 
 
                 # otherwise keep going
@@ -1061,7 +1009,7 @@ class KneppModel(mesa.Model):
             # April 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 2:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1082,7 +1030,7 @@ class KneppModel(mesa.Model):
             # May 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 3:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1100,7 +1048,7 @@ class KneppModel(mesa.Model):
             # June 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 4:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1118,7 +1066,7 @@ class KneppModel(mesa.Model):
             # July 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 5:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1136,7 +1084,7 @@ class KneppModel(mesa.Model):
             # August 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 6:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1160,7 +1108,7 @@ class KneppModel(mesa.Model):
             # Sept 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 7:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1181,7 +1129,7 @@ class KneppModel(mesa.Model):
             # Oct 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 8:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1199,7 +1147,7 @@ class KneppModel(mesa.Model):
             # Nov 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 9:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1223,7 +1171,7 @@ class KneppModel(mesa.Model):
             # Dec 2021
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 10:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1252,7 +1200,7 @@ class KneppModel(mesa.Model):
             # Jan 2022
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 11:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub
@@ -1279,7 +1227,7 @@ class KneppModel(mesa.Model):
             # Feb 2022: cull them all back to stocking values
             if self.schedule.time >= 193 and ((self.schedule.time % 12) + 1) == 12:
                 if self.experiment_growth == True:
-                    if self.schedule.time >= 2052 and (self.schedule.time < (2052 + self.duration)):
+                    if self.schedule.time >= 1788 and (self.schedule.time < (1788 + self.duration)):
                         # collect my initial time
                         self.chance_reproduceSapling = self.exp_chance_reproduceSapling
                         self.chance_reproduceYoungScrub = self.exp_chance_reproduceYoungScrub

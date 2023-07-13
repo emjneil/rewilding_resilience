@@ -6,26 +6,31 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-# first function checks the existence of alternative stable states under current conditions
-# second function compared to if rewilding hadn't happened (roe deer there, but no large herbivores)
+# check the existence of alternative stable states under current conditions
 
 
 def check_resilience():
 
     # pick the best parameter set
-    best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
+    # best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
+
+    best_parameter = pd.read_excel('optimizer_outputs_resilience.xlsx', engine="openpyxl")
+    best_parameter = best_parameter.loc[best_parameter["run_number"] == 1.0]
+
 
     # pick a few starting conditions - we want the first run to be initial conditions
-    initial_stocking = [1]
-    stocking_changes = random.choices([1, 0, 0.5, 2, 5], k=100)
-    stocking_changes_list = initial_stocking + stocking_changes
+    stocking_changes = np.random.uniform(low=0,high=100,size=10) # this one is for looking at landscaping
+    stocking_changes = np.insert(stocking_changes, 0, 1, axis=0)
+
 
     # now do initial vegetation values
     initial_wood_list = [0.058]
     initial_grass_list = [0.899]
     initial_scrub_list = [0.043]
+    counter = 0
+
     # add the rest
-    for i in range(100):
+    while counter < 10:
         wood = random.uniform(0, 1)
         grass = random.uniform(0, 1)
         scrub = random.uniform(0, 1)
@@ -37,6 +42,7 @@ def check_resilience():
             grass = norm[1]
             scrub = norm[2]
         # append to list
+        counter +=1
         initial_wood_list.append(wood)
         initial_grass_list.append(grass)
         initial_scrub_list.append(scrub)
@@ -48,7 +54,7 @@ def check_resilience():
 
 
     # take the accepted parameters, and go row by row, running the model
-    for i, w, g, s in zip(stocking_changes_list, initial_wood_list, initial_grass_list, initial_scrub_list):
+    for i, w, g, s in zip(stocking_changes, initial_wood_list, initial_grass_list, initial_scrub_list):
         
         chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item()
         chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item()
@@ -170,6 +176,7 @@ def check_resilience():
         initial = habs_only.iloc[0]
         end = habs_only.iloc[-1]
 
+
         # collect their conditions
         final_df[run_number] = {"Grassland Initial": initial['Grassland'].item(), "Grassland End": end['Grassland'].item(), 
                                 "Woodland Initial": initial['Woodland'].item(), "Woodland End": end['Woodland'].item(), 
@@ -177,6 +184,7 @@ def check_resilience():
                                 "Stocking Density": i,
                                 "Run Number": run_number
         }
+
 
 
     # append to dataframe
