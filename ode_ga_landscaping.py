@@ -198,7 +198,7 @@ def objectiveFunction(x):
     combined_future_times = []
 
 
-    for y in range(1000): 
+    for y in range(500): 
         years_covered += 1
 
         # after 1k years, try to engineer it back
@@ -209,14 +209,14 @@ def objectiveFunction(x):
         starting_values[4] = 2.7
         starting_values[6] = 0.55
 
-        if years_covered >= 516:
-            # starting_values[6] = 0.55 * exmoor_stocking_change
+        if years_covered >= 17:
+            # starting_values[0] = 0.65 * exmoor_stocking_change
 
-            starting_values[0] = 0.65 * exmoor_stocking_change
-            # starting_values[1] = 5.9 * fallow_stocking_change
-            # starting_values[3] = 1.5 * cattle_stocking_change
-            # starting_values[4] = 2.7 * red_stocking_change
-            # starting_values[6] = 0.55 * pig_stocking_change
+            # starting_values[0] = 0.65 * exmoor_stocking_change
+            # starting_values[1] = 5.9 * exmoor_stocking_change
+            # starting_values[3] = 1.5 * exmoor_stocking_change
+            # starting_values[4] = 2.7 * exmoor_stocking_change
+            starting_values[6] = 0.55 * exmoor_stocking_change
 
         # keep track of time
         t_steady = np.linspace(years_covered, years_covered+0.75, 3)
@@ -232,7 +232,7 @@ def objectiveFunction(x):
     # reshape outputs
     combined_future = np.hstack(combined_future_runs)
     combined_future_times = np.hstack(combined_future_times)
-    y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 3000).transpose(),1)))
+    y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 1500).transpose(),1)))
     y_future = pd.DataFrame(data=y_future, columns=species)
     # put into df
     y_future['Time'] = combined_future_times
@@ -252,9 +252,9 @@ def objectiveFunction(x):
     # we want 33% of each
     filtered_result = (
         # end state should be = to previous state
-        ((((((y_future.loc[y_future["Time"] == 1016.75, 'thornyScrub'].item())))-7.7)/7.7)**2) + 
-        ((((((y_future.loc[y_future["Time"] == 1016.75, 'grasslandParkland'].item())))-0.37)/0.37)**2) +
-        ((((((y_future.loc[y_future["Time"] == 1016.75, 'woodland'].item())))-5.7)/5.7)**2)
+        ((((((y_future.loc[y_future["Time"] == 516.75, 'thornyScrub'].item())))-7.7)/7.7)**2) + 
+        ((((((y_future.loc[y_future["Time"] == 516.75, 'grasslandParkland'].item())))-0.37)/0.37)**2) +
+        ((((((y_future.loc[y_future["Time"] == 516.75, 'woodland'].item())))-5.7)/5.7)**2)
 
         )
 
@@ -262,7 +262,7 @@ def objectiveFunction(x):
     # print
     print("n:", filtered_result)
 
-    if filtered_result < 1.3:
+    if filtered_result < 1.26:
         print(filtered_result, last_values_2020)
     
     # return the output
@@ -274,16 +274,18 @@ def objectiveFunction(x):
 
 
 def run_optimizer():
-    # Define the bounds: 0-100x their current levels
+    # Define the bounds
     bds = np.array([
-        # [0,5], [0,5], [0,5], [0,5], [0,5]
-        [0,5]
+        # [0,10], [0,10], [0,10], [0,10], [0,10]
+        # [1,1], [1,1], [1,1], [1,1], [1,1]
+
+        [0,25]
         ])
 
 
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':5,
-                    'population_size':100,\
+    algorithm_param = {'max_num_iteration':10,
+                    'population_size':500,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -296,7 +298,7 @@ def run_optimizer():
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('eem_optim_outputs_eem_landscaping.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('eem_optim_outputs_landscaping.xlsx', header=False, index=False)
 
     return optimization.output_dict
 
@@ -304,7 +306,7 @@ def run_optimizer():
 
 
 
-run_optimizer()
+# run_optimizer()
 
 
 
@@ -316,7 +318,7 @@ run_optimizer()
 def graph_outputs():
 
     # Exmoor (fit: 1.0); fallow deer (0.61); longhorn cattle (1.0); red deer (0.44); tamworth pig (1.0)
-    stocking_changes = [34.2, 4.7, 11.9, 17.6, 25] 
+    stocking_changes = [30, 4.2, 11.9, 17.6, 25] 
     index_species = [0,1,3,4,6]
 
     accepted_parameters = pd.read_csv('eem_accepted_parameters.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
@@ -477,7 +479,7 @@ def graph_outputs():
             combined_future_times = []
 
 
-            for y in range(1000): 
+            for y in range(500): 
                 years_covered += 1
 
                 # after 1k years, try to engineer it back
@@ -488,7 +490,7 @@ def graph_outputs():
                 starting_values[4] = 2.7
                 starting_values[6] = 0.55
 
-                if years_covered >= 516:
+                if years_covered >= 17:
                     starting_values[j] = starting_values[j] * i
 
                 # keep track of time
@@ -505,7 +507,7 @@ def graph_outputs():
             # reshape outputs
             combined_future = np.hstack(combined_future_runs)
             combined_future_times = np.hstack(combined_future_times)
-            y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 3000).transpose(),1)))
+            y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 1500).transpose(),1)))
             y_future = pd.DataFrame(data=y_future, columns=species)
             # put into df
             y_future['Time'] = combined_future_times
@@ -538,7 +540,7 @@ def graph_outputs():
     all_timeseries.to_csv("eem_ga_timeseries_stockingchanges.csv")
 
 
-# graph_outputs()
+graph_outputs()
 
 
 
@@ -708,10 +710,10 @@ def all_varied_together():
         combined_future_times = []
 
 
-        for y in range(1000): 
+        for y in range(500): 
             years_covered += 1
 
-            # after 1k years, try to engineer it back
+            # # after 1k years, try to engineer it back
             starting_values = last_values_2020.copy()
             starting_values[0] = 0.65
             starting_values[1] = 5.9
@@ -719,12 +721,12 @@ def all_varied_together():
             starting_values[4] = 2.7
             starting_values[6] = 0.55
 
-            # if years_covered >= 516:
-            #     starting_values[0] = 0.65 * 1.1
-            #     starting_values[1] = 5.9 * 4.1
-            #     starting_values[3] = 1.5 *  0.07
-            #     starting_values[4] = 2.7 * 4
-            #     starting_values[6] = 0.55 * 0.2
+            if years_covered >= 17:
+                starting_values[0] = 0.65 * 1.7
+                starting_values[1] = 5.9 * 2.7
+                starting_values[3] = 1.5 *  0.06
+                starting_values[4] = 2.7 * 8.9
+                starting_values[6] = 0.55 * 0.02
 
             # keep track of time
             t_steady = np.linspace(years_covered, years_covered+0.75, 3)
@@ -740,7 +742,7 @@ def all_varied_together():
         # reshape outputs
         combined_future = np.hstack(combined_future_runs)
         combined_future_times = np.hstack(combined_future_times)
-        y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 3000).transpose(),1)))
+        y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 1500).transpose(),1)))
         y_future = pd.DataFrame(data=y_future, columns=species)
         # put into df
         y_future['Time'] = combined_future_times
