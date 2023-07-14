@@ -11,7 +11,7 @@ import random
 
 # ------ Optimization of the Knepp ABM model --------
 
-print("running 119")
+print("running 112")
 
 def objectiveFunction(x):
 
@@ -86,23 +86,17 @@ def objectiveFunction(x):
     reindeer_gain_from_young_scrub = 0
     # stocking values
     initial_roe = 12
-    fallowDeer_stocking = 247
-    cattle_stocking = 81
-    redDeer_stocking = 35
-    tamworthPig_stocking = 7
-    exmoor_stocking = 15
+    fallowDeer_stocking_forecast = 247
+    cattle_stocking_forecast = 81
+    redDeer_stocking_forecast = 35
+    tamworthPig_stocking_forecast = 7
+    exmoor_stocking_forecast = 15
     initial_wood = 0.058
     initial_grass = 0.899
     initial_scrub = 0.043
 
-    # forecasting
-    fallowDeer_stocking_forecast = 86
-    cattle_stocking_forecast = 76
-    redDeer_stocking_forecast = 21
-    tamworthPig_stocking_forecast = 7
-    exmoor_stocking_forecast = 15
-    roeDeer_stocking_forecast = 12
     introduced_species_stocking_forecast = 0
+
     # tree mortality
     chance_scrub_saves_saplings = x[43]
 
@@ -253,7 +247,7 @@ def run_optimizer():
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('optim_outputs_119.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('optim_outputs_112.xlsx', header=False, index=False)
     return optimization.output_dict
 
 
@@ -320,14 +314,16 @@ def graph_results():
     tamworth_pig_gain_from_young_scrub = output_parameters["variable"][42]
     chance_scrub_saves_saplings = output_parameters["variable"][43]
     # stocking values
-    fallowDeer_stocking = 247
-    cattle_stocking = 81
-    redDeer_stocking = 35
-    tamworthPig_stocking = 7
-    exmoor_stocking = 15
+    fallowDeer_stocking_forecast = 247
+    cattle_stocking_forecast = 81
+    redDeer_stocking_forecast = 35
+    tamworthPig_stocking_forecast = 7
+    exmoor_stocking_forecast = 15
     initial_wood = 0.058
     initial_grass = 0.899
     initial_scrub = 0.043
+
+    introduced_species_stocking_forecast = 0
 
     # euro bison parameters
     european_bison_reproduce = 0
@@ -353,14 +349,7 @@ def graph_results():
     reindeer_gain_from_scrub =0
     reindeer_gain_from_saplings = 0
     reindeer_gain_from_young_scrub = 0
-    # forecasting
-    fallowDeer_stocking_forecast = 86
-    cattle_stocking_forecast = 76
-    redDeer_stocking_forecast = 21
-    tamworthPig_stocking_forecast = 7
-    exmoor_stocking_forecast = 15
-    roeDeer_stocking_forecast = 12
-    introduced_species_stocking_forecast = 0
+
 
     exp_chance_reproduceSapling = 0
     exp_chance_reproduceYoungScrub =  0

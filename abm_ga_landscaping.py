@@ -20,8 +20,7 @@ def objectiveFunction(x):
 
     # open the best parameter set
     best_ps = pd.read_excel("optimizer_outputs_resilience.xlsx",  engine="openpyxl")
-    best_ps = best_ps.loc[best_ps["run_number"] <= 100]
-
+    best_ps = best_ps.loc[best_ps["run_number"] == 1]
 
     exmoor_stocking_change = x[0]
     fallow_stocking_change = x[1]
@@ -61,7 +60,7 @@ def objectiveFunction(x):
     ponies_gain_from_saplings =  best_ps["ponies_gain_from_saplings"].item()
     ponies_gain_from_young_scrub =  best_ps["ponies_gain_from_young_scrub"].item()
     cattle_reproduce =  best_ps["cattle_reproduce"].item()
-    cows_gain_from_grass =  best_ps["cows_gain_from_grass".item()]
+    cows_gain_from_grass =  best_ps["cows_gain_from_grass"].item()
     cows_gain_from_trees =  best_ps["cows_gain_from_trees"].item()
     cows_gain_from_scrub =  best_ps["cows_gain_from_scrub"].item()
     cows_gain_from_saplings =  best_ps["cows_gain_from_saplings"].item()
@@ -320,7 +319,7 @@ def graph_results():
             introduced_species_stocking_forecast = 0
 
             # reset whichever one we need
-            j = j * i
+            j = int(j * i)
 
             chance_scrub_saves_saplings = row["chance_scrub_saves_saplings"]
 
@@ -481,11 +480,11 @@ def all_varied_together():
         reindeer_gain_from_saplings = 0
         reindeer_gain_from_young_scrub = 0
         # forecasting parameters
-        fallowDeer_stocking_forecast = 247 * x
-        cattle_stocking_forecast = 81 * x
-        redDeer_stocking_forecast = 35 * x 
-        tamworthPig_stocking_forecast = 7 * x
-        exmoor_stocking_forecast = 15 * x
+        fallowDeer_stocking_forecast = int(247 * x)
+        cattle_stocking_forecast = int(81 * x)
+        redDeer_stocking_forecast = int(35 * x)
+        tamworthPig_stocking_forecast =int(7 * x)
+        exmoor_stocking_forecast = int(15 * x)
         introduced_species_stocking_forecast = 0
         chance_scrub_saves_saplings = row["chance_scrub_saves_saplings"]
 

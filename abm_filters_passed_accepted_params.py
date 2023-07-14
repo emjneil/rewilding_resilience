@@ -15,6 +15,7 @@ def run_model():
     # open the parameters
     final_parameters = pd.read_excel("optimizer_outputs_resilience.xlsx",  engine="openpyxl")
     final_parameters = final_parameters.loc[final_parameters["run_number"] <= 100]
+    
 
 
     final_results_list = []
@@ -35,11 +36,6 @@ def run_model():
         chance_grassOutcompetedByScrub = row["chance_grassOutcompetedByScrub"]
 
         initial_roe = 12
-        fallowDeer_stocking = 247
-        cattle_stocking = 81
-        redDeer_stocking = 35
-        tamworthPig_stocking = 7
-        exmoor_stocking = 15
         initial_wood = 0.058
         initial_grass = 0.899
         initial_scrub = 0.043
