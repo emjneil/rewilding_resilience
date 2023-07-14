@@ -15,14 +15,17 @@ import random
 import statistics
 
 
-# alter one species at a time to get to 33% of each habitat type
-# save timeseries
+# alter one species at a time to get to the following end states: 
+# END STATE 1: 45% grassland, 0% woodland, 0.55% thorny scrub. 
+# END STATE 2: 4.8% grassland, 15% woodland, 50.5% thorny scrub
+# END STATE 3: 5.8% grassland, 76.4% woodland, 15.2% thorny scrub
 
 
 # ------ Optimization --------
 
 
 species = ['exmoorPony','fallowDeer','grasslandParkland','longhornCattle','redDeer','roeDeer','tamworthPig','thornyScrub','woodland']
+
 
 def ecoNetwork(t, X, A, r):
     # put things to zero if they go below a certain threshold
@@ -51,10 +54,10 @@ def objectiveFunction(x):
     A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
 
     exmoor_stocking_change = x[0]
-    # fallow_stocking_change = x[1]
-    # cattle_stocking_change = x[2]
-    # red_stocking_change = x[3]
-    # pig_stocking_change = x[4]
+    fallow_stocking_change = x[1]
+    cattle_stocking_change = x[2]
+    red_stocking_change = x[3]
+    pig_stocking_change = x[4]
 
 
 
@@ -212,11 +215,12 @@ def objectiveFunction(x):
         if years_covered >= 17:
             # starting_values[0] = 0.65 * exmoor_stocking_change
 
-            # starting_values[0] = 0.65 * exmoor_stocking_change
-            # starting_values[1] = 5.9 * exmoor_stocking_change
-            # starting_values[3] = 1.5 * exmoor_stocking_change
-            # starting_values[4] = 2.7 * exmoor_stocking_change
-            starting_values[6] = 0.55 * exmoor_stocking_change
+            starting_values[0] = 0.65 * exmoor_stocking_change
+            starting_values[1] = 5.9 * fallow_stocking_change
+            starting_values[3] = 1.5 * cattle_stocking_change
+            starting_values[4] = 2.7 * red_stocking_change
+            starting_values[6] = 0.55 * pig_stocking_change
+
 
         # keep track of time
         t_steady = np.linspace(years_covered, years_covered+0.75, 3)
@@ -249,20 +253,30 @@ def objectiveFunction(x):
     timeseries = pd.concat([y_2, y_future])
 
 
-    # we want 33% of each
+    # target the end state we want
+    # print(y_future.loc[y_future["Time"] == 516.75, 'grasslandParkland'].item())
+    # print(y_future.loc[y_future["Time"] == 516.75, 'thornyScrub'].item())
+
     filtered_result = (
         # end state should be = to previous state
-        ((((((y_future.loc[y_future["Time"] == 516.75, 'thornyScrub'].item())))-7.7)/7.7)**2) + 
-        ((((((y_future.loc[y_future["Time"] == 516.75, 'grasslandParkland'].item())))-0.37)/0.37)**2) +
-        ((((((y_future.loc[y_future["Time"] == 516.75, 'woodland'].item())))-5.7)/5.7)**2)
+        ((((((y_future.loc[y_future["Time"] == 516.75, 'grasslandParkland'].item())))-0.5)/0.5)**2)
+        # ((((((y_future.loc[y_future["Time"] == 516.75, 'thornyScrub'].item())))-11.6)/11.6)**2) 
+        # ((((((y_future.loc[y_future["Time"] == 516.75, 'woodland'].item())))-13.2)/13.2)**2)
 
         )
+
+
+# END STATE 1: 45% grassland, 0.55% thorny scrub, 0% woodland
+# END STATE 2: 4.8% grassland, 50.5% thorny scrub, 15% woodland
+# END STATE 3: 5.8% grassland, 15.2% thorny scrub, 76.4% woodland
+
+
 
 
     # print
     print("n:", filtered_result)
 
-    if filtered_result < 1.26:
+    if filtered_result < 0.4:
         print(filtered_result, last_values_2020)
     
     # return the output
@@ -276,16 +290,14 @@ def objectiveFunction(x):
 def run_optimizer():
     # Define the bounds
     bds = np.array([
-        # [0,10], [0,10], [0,10], [0,10], [0,10]
+        [0,20], [0,20], [0,20], [0,20], [0,20]
         # [1,1], [1,1], [1,1], [1,1], [1,1]
-
-        [0,25]
         ])
 
 
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':10,
-                    'population_size':500,\
+    algorithm_param = {'max_num_iteration':5,
+                    'population_size':100,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -294,7 +306,7 @@ def run_optimizer():
                     'max_iteration_without_improv': 2}
 
 
-    optimization =  ga(function = objectiveFunction, dimension = 1, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
+    optimization =  ga(function = objectiveFunction, dimension = 5, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
@@ -306,7 +318,11 @@ def run_optimizer():
 
 
 
-# run_optimizer()
+run_optimizer()
+
+
+
+
 
 
 
@@ -540,7 +556,7 @@ def graph_outputs():
     all_timeseries.to_csv("eem_ga_timeseries_stockingchanges.csv")
 
 
-graph_outputs()
+# graph_outputs()
 
 
 
@@ -722,12 +738,11 @@ def all_varied_together():
             starting_values[6] = 0.55
 
             if years_covered >= 17:
-                starting_values[0] = 0.65 * 1.7
-                starting_values[1] = 5.9 * 2.7
-                starting_values[3] = 1.5 *  0.06
-                starting_values[4] = 2.7 * 8.9
-                starting_values[6] = 0.55 * 0.02
-
+                starting_values[0] = 0.65 * 0.64
+                starting_values[1] = 5.9 * 0.06
+                starting_values[3] = 1.5 *  1.4
+                starting_values[4] = 2.7 * 0.32
+                starting_values[6] = 0.55 * 0.26
             # keep track of time
             t_steady = np.linspace(years_covered, years_covered+0.75, 3)
             # run model
@@ -747,9 +762,9 @@ def all_varied_together():
         # put into df
         y_future['Time'] = combined_future_times
         y_future["Stocking"] = 0
-        # y_future["Species"] = "All varied together"
+        y_future["Species"] = "75% Woodland"
         # y_future["Species"] = "No control"
-        y_future["Species"] = "Current dynamics"
+        # y_future["Species"] = "Current dynamics"
 
         y_future["run_number"] = run_number
 
@@ -762,9 +777,9 @@ def all_varied_together():
         y_2 = pd.DataFrame(data=y_2, columns=species)
         y_2['Time'] = combined_times
         y_2["Stocking"] = 0
-        # y_2["Species"] = "All varied together"
+        y_2["Species"] = "75% Woodland"
         # y_2["Species"] = "No control"
-        y_2["Species"] = "Current dynamics"
+        # y_2["Species"] = "Current dynamics"
 
         y_2["run_number"] = run_number
 
@@ -778,8 +793,11 @@ def all_varied_together():
 
     all_timeseries = pd.concat(all_timeseries)
     print(all_timeseries)
-    # all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_alltogether.csv")    
-    all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_currentdynamics.csv")
+    # all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_alltogether_aes1.csv")    
+    # all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_alltogether_aes2.csv")    
+    all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_alltogether_aes3.csv")    
+
+    # all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_currentdynamics.csv")
     # all_timeseries.to_csv("eem_ga_timeseries_stockingchanges_nocontrol.csv")
 
 
