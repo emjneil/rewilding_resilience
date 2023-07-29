@@ -29,7 +29,8 @@ class KneppModel(mesa.Model):
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                         exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                         reintroduction, introduce_euroBison, introduce_elk, 
-                        experiment_growth, experiment_wood, experiment_linear_growth):
+                        experiment_growth, experiment_wood, experiment_linear_growth, 
+                        max_time, max_roe):
 
         # add the schedule and experiments 
         self.schedule = RandomActivationByBreed(self)
@@ -39,6 +40,8 @@ class KneppModel(mesa.Model):
         self.experiment_growth = experiment_growth
         self.experiment_wood = experiment_wood
         self.experiment_linear_growth = experiment_linear_growth
+        self.max_time = max_time
+        self.max_roe = max_roe
 
 
         # first define the space and add the field polygon agents
@@ -329,29 +332,35 @@ class KneppModel(mesa.Model):
                 number_sows = random.randint(4,8)
                 number_piglets = 20-number_sows
                 self.add_pig(tamworth_pig_agent,number_piglets, number_sows, 0, random_move)
+  
             # March 2010
             if self.schedule.time == 61:
                 outputs = self.datacollector.get_model_vars_dataframe()
-                # exmoor ponies
-                if outputs.iloc[61]['Exmoor pony'] < 13:
-                    number_to_add = int(13 - outputs.iloc[61]['Exmoor pony'])
-                    self.add_herbivores(exmoor_pony_agent, number_to_add, grazer_move)
-                # longhorn cows
-                if outputs.iloc[61]['Longhorn cattle'] >= 77:
-                    number_to_subtract = int(-77 + outputs.iloc[61]['Longhorn cattle'])
-                    self.remove_herbivores(longhorn_cattle_agent, number_to_subtract)
-                else:
-                    number_to_add = int(77 - outputs.iloc[61]['Longhorn cattle'])
-                    self.add_herbivores(longhorn_cattle_agent, number_to_add, grazer_move)
-                # add fallow deer
-                self.add_herbivores(fallow_deer_agent, 53, mixed_diet_move)
-                # tamworth pigs
-                if outputs.iloc[61]['Tamworth pigs'] >= 17:
-                    number_to_subtract = int(-17 + outputs.iloc[61]['Tamworth pigs'])
-                    self.remove_pig(tamworth_pig_agent, number_to_subtract, 0, 0)
-                else:
-                    number_to_add = int(17 - outputs.iloc[61]['Tamworth pigs'])
-                    self.add_pig(tamworth_pig_agent, number_to_add, 0, 0, random_move)
+                if (outputs.iloc[-1]["Roe deer"] <= 160): # don't let roe deer explode
+                    # exmoor ponies
+                    if outputs.iloc[61]['Exmoor pony'] < 13:
+                        number_to_add = int(13 - outputs.iloc[61]['Exmoor pony'])
+                        self.add_herbivores(exmoor_pony_agent, number_to_add, grazer_move)
+                    # longhorn cows
+                    if outputs.iloc[61]['Longhorn cattle'] >= 77:
+                        number_to_subtract = int(-77 + outputs.iloc[61]['Longhorn cattle'])
+                        self.remove_herbivores(longhorn_cattle_agent, number_to_subtract)
+                    else:
+                        number_to_add = int(77 - outputs.iloc[61]['Longhorn cattle'])
+                        self.add_herbivores(longhorn_cattle_agent, number_to_add, grazer_move)
+                    # add fallow deer
+                    self.add_herbivores(fallow_deer_agent, 53, mixed_diet_move)
+                    # tamworth pigs
+                    if outputs.iloc[61]['Tamworth pigs'] >= 17:
+                        number_to_subtract = int(-17 + outputs.iloc[61]['Tamworth pigs'])
+                        self.remove_pig(tamworth_pig_agent, number_to_subtract, 0, 0)
+                    else:
+                        number_to_add = int(17 - outputs.iloc[61]['Tamworth pigs'])
+                        self.add_pig(tamworth_pig_agent, number_to_add, 0, 0, random_move)
+                else: 
+                    self.running = False
+
+
             # March 2011
             if self.schedule.time == 73:
                 outputs = self.datacollector.get_model_vars_dataframe()
@@ -623,12 +632,15 @@ class KneppModel(mesa.Model):
             if self.schedule.time == 145:
                 self.remove_herbivores(exmoor_pony_agent, 1)
                 outputs = self.datacollector.get_model_vars_dataframe()
-                if outputs.iloc[145]['Red deer'] >= 14:
-                    number_to_subtract = int(-14 + outputs.iloc[145]['Red deer'])
-                    self.remove_herbivores(red_deer_agent, number_to_subtract)
+                if (outputs.iloc[-1]["Roe deer"] <= 160): # don't let roe deer explode
+                    if outputs.iloc[145]['Red deer'] >= 14:
+                        number_to_subtract = int(-14 + outputs.iloc[145]['Red deer'])
+                        self.remove_herbivores(red_deer_agent, number_to_subtract)
+                    else:
+                        number_to_add = int(14 - outputs.iloc[145]['Red deer'])
+                        self.add_herbivores(red_deer_agent, number_to_add, mixed_diet_move)
                 else:
-                    number_to_add = int(14 - outputs.iloc[145]['Red deer'])
-                    self.add_herbivores(red_deer_agent, number_to_add, mixed_diet_move)
+                    self.running = False
             # April 2017
             if self.schedule.time == 146:
                 self.add_herbivores(longhorn_cattle_agent, 3, grazer_move)
@@ -938,12 +950,15 @@ class KneppModel(mesa.Model):
 
 
 
-                # get the time-step of five years previously; if it hasn't changed, stop
+                # get the time-step of ten years previously; if it hasn't changed, stop
                 results = self.datacollector.get_model_vars_dataframe() 
                 ten_years_ago = self.schedule.time - 120
 
                 # check once per year if it's at equilibrium or if roe deer explode
-                if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= 6000 or (results.iloc[-1]["Roe deer"] >= 500) or (results.iloc[-1]["Roe deer"] == 0):                                    
+                if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= self.max_time or (results.iloc[-1]["Roe deer"] >= self.max_roe) or (results.iloc[-1]["Roe deer"] == 0):                                    
+                
+                # remove roe deer criteria for landscape graph
+                # if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= 6000:                                    
                     self.running = False
 
 

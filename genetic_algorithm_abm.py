@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 import sys
 import statistics
 import random
+from openpyxl import load_workbook
+
+
 
 # ------ Optimization of the Knepp ABM model --------
 
-print("running 112")
 
 def objectiveFunction(x):
 
@@ -125,7 +127,8 @@ def objectiveFunction(x):
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                         exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False)
+                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False,
+                        max_time = 303, max_roe = 160)
 
 
     model.reset_randomizer(seed=1)
@@ -138,76 +141,56 @@ def objectiveFunction(x):
     # get the last year
     end = results.iloc[-1]
 
-    # if it's < 6000, return a high number (means roe deer were too high)
-    if end["Time"] < 5999:
-        return 10000
+    if end["Time"] < 303:
+        print("failed roe", end['Roe deer'])
+        return 1000 + end['Roe deer']
+
 
 
     else:
-        # if it ran for 500 years, check the last 100 years and calculate gradient - has it reached equilibrium?
-        last_hundred = results.loc[results["Time"] >= 4800]
-        # only species I care about - ones that aren't controlled
-        uncontrolled_only = last_hundred[['Grassland', 'Woodland', 'Thorny Scrub', 'Roe deer']]
 
-        gradients = {}
+        # find the middle of each filter
+        filtered_result = (
+            # pre-reintro model
+            ((((list(results.loc[results['Time'] == 49, 'Roe deer'])[0])-26)/13)**2) +
+            ((((list(results.loc[results['Time'] == 49, 'Grassland'])[0])-58.4)/30.4)**2) +
+            ((((list(results.loc[results['Time'] == 49, 'Thorny Scrub'])[0])-28.1)/14.1)**2) +
+            ((((list(results.loc[results['Time'] == 49, 'Woodland'])[0])-11.4)/5.4)**2) +
+            # March 2019
+            ((((list(results.loc[results['Time'] == 169, 'Fallow deer'])[0])-278)/278)**2) +
+            ((((list(results.loc[results['Time'] == 169, 'Red deer'])[0])-37)/37)**2) +
+            # March 2020
+            ((((list(results.loc[results['Time'] == 181, 'Fallow deer'])[0])-247)/247)**2) +
+            ((((list(results.loc[results['Time'] == 181, 'Red deer'])[0])-35)/35)**2) +
+            ((((list(results.loc[results['Time'] == 181, 'Longhorn cattle'])[0])-81)/81)**2) +
+            # May 2020
+            ((((list(results.loc[results['Time'] == 183, 'Exmoor pony'])[0])-15)/15)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Longhorn cattle'])[0])-81)/81)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Roe deer'])[0])-50)/25)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Grassland'])[0])-26.8)/13.8)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Thorny Scrub'])[0])-51.8)/25.8)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Woodland'])[0])-21.5)/10.5)**2) +
+            # Tamworth pigs: average pop between 2015-2021 (based monthly data) = 15 
+            ((((statistics.mean(list(results.loc[results['Time'] > 121, 'Tamworth pigs'])))-15)/15)**2)
 
-        for column in uncontrolled_only.columns:
+            )
+
+        # only print the last year's result if it's reasonably close to the filters
+        if filtered_result < 50:
+            print("r:", filtered_result)
+            with pd.option_context('display.max_columns',None):
+                just_nodes = results[results['Time'] == 303]
+                just_nodes_2 = results[results['Time'] == 183]
+                print(just_nodes_2[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
+                print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
+        else:
+            print("n:", int(filtered_result))
             
-            # Get the population values for the current species
-            population_values = uncontrolled_only[column].values
-            # Create an array representing the years (assuming the index represents the years)
-            years = uncontrolled_only.index.values
-            # Fit a first-degree polynomial (line) to the population values
-            coefficients = np.polyfit(years, population_values, deg=1)
-            # Extract the gradient (slope) from the coefficients
-            gradient = coefficients[0]
-            # Store the gradient in the dictionary
-            gradients[column] = gradient
-
-        # if it's not at equilibrium, fail it
-        if abs(gradients["Roe deer"]) > 0.01 or abs(gradients["Thorny Scrub"]) > 0.01 or abs(gradients["Grassland"]) > 0.01 or abs(gradients["Woodland"]) > 0.01:
-            print("not at equilibrium", gradients)
-            return 5000
+        # return the output
+        return filtered_result
+    
 
 
-        else:  
-            # find the middle of each filter
-            filtered_result = (
-                # pre-reintro model
-                ((((list(results.loc[results['Time'] == 49, 'Roe deer'])[0])-26)/26)**2) +
-                ((((list(results.loc[results['Time'] == 49, 'Grassland'])[0])-58.4)/58.4)**2) +
-                ((((list(results.loc[results['Time'] == 49, 'Thorny Scrub'])[0])-28.1)/28.1)**2) +
-                ((((list(results.loc[results['Time'] == 49, 'Woodland'])[0])-11.4)/11.4)**2) +
-                # March 2019
-                ((((list(results.loc[results['Time'] == 169, 'Fallow deer'])[0])-278)/278)**2) +
-                ((((list(results.loc[results['Time'] == 169, 'Red deer'])[0])-37)/37)**2) +
-                # March 2020
-                ((((list(results.loc[results['Time'] == 181, 'Fallow deer'])[0])-247)/247)**2) +
-                ((((list(results.loc[results['Time'] == 181, 'Red deer'])[0])-35)/35)**2) +
-                ((((list(results.loc[results['Time'] == 181, 'Longhorn cattle'])[0])-81)/81)**2) +
-                # May 2020
-                ((((list(results.loc[results['Time'] == 183, 'Exmoor pony'])[0])-15)/15)**2) +
-                ((((list(results.loc[results['Time'] == 183, 'Longhorn cattle'])[0])-81)/81)**2) +
-                ((((list(results.loc[results['Time'] == 183, 'Roe deer'])[0])-50)/50)**2) +
-                ((((list(results.loc[results['Time'] == 183, 'Grassland'])[0])-26.8)/26.8)**2) +
-                ((((list(results.loc[results['Time'] == 183, 'Thorny Scrub'])[0])-51.8)/51.8)**2) +
-                ((((list(results.loc[results['Time'] == 183, 'Woodland'])[0])-21.5)/21.5)**2) +
-                # Tamworth pigs: average pop between 2015-2021 (based monthly data) = 15 
-                ((((statistics.mean(list(results.loc[results['Time'] > 121, 'Tamworth pigs'])))-15)/15)**2)
-                )
-
-            # only print the last year's result if it's reasonably close to the filters
-            if filtered_result < 10:
-                print("r:", filtered_result)
-                with pd.option_context('display.max_columns',None):
-                    just_nodes = results[results['Time'] == 5999]
-                    print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
-            else:
-                print("n:", int(filtered_result))
-            
-            # return the output
-            return filtered_result
-   
 
 
 def run_optimizer():
@@ -217,24 +200,25 @@ def run_optimizer():
         [0,1], # mature scrub competition
         [0,1],[0,1], # grass competition
         # roe parameters
-        [0.1,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
+        [0.1,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # fallow deer parameters
-        [0.3,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
+        [0.3,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # red deer
-        [0.3,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
+        [0.3,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # exmoor pony parameters
-                [0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
+                [0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # cattle parameters
-        [0,0.5],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
+        [0,0.5],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # pig parameters
-        [0,0.75],[0,1*0.25],[0,0.33*0.25],[0,0.33*0.25],[0,0.1*0.25],[0,0.1*0.25],
+        [0,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # sapling protection parameter
         [0,1]])
 
 
+
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':10,
-                    'population_size':50,\
+    algorithm_param = {'max_num_iteration':5,
+                    'population_size':100,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -246,27 +230,26 @@ def run_optimizer():
     optimization =  ga(function = objectiveFunction, dimension = 44, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
-    # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('optim_outputs_112.xlsx', header=False, index=False)
     return optimization.output_dict
 
 
-run_optimizer()
 
 
 
 
 
+# make sure the GA outputs pass the ecological criteria
+def save_results(): 
 
 
+    wb = load_workbook("GA_outputs_ABM.xlsx")
+    ws = wb.worksheets[0]
 
+    output_parameters = run_optimizer()
 
-def graph_results():
-    # output_parameters = run_optimizer()
-
-    # define the parameters
     initial_roe = 12
 
+    # now run it to 600: do they pass roe and equilibrium criteria? 
     chance_reproduceSapling = output_parameters["variable"][0]
     chance_reproduceYoungScrub = output_parameters["variable"][1]
     chance_regrowGrass =output_parameters["variable"][2]
@@ -322,6 +305,255 @@ def graph_results():
     initial_wood = 0.058
     initial_grass = 0.899
     initial_scrub = 0.043
+    introduced_species_stocking_forecast = 0
+    # euro bison parameters
+    european_bison_reproduce = 0
+    # bison should have higher impact than any other consumer
+    european_bison_gain_from_grass =  0
+    european_bison_gain_from_trees =0
+    european_bison_gain_from_scrub =0
+    european_bison_gain_from_saplings = 0
+    european_bison_gain_from_young_scrub = 0  
+    # euro elk parameters
+    european_elk_reproduce = 0
+    # bison should have higher impact than any other consumer
+    european_elk_gain_from_grass =  0
+    european_elk_gain_from_trees = 0
+    european_elk_gain_from_scrub = 0
+    european_elk_gain_from_saplings =  0
+    european_elk_gain_from_young_scrub =  0
+    # reindeer parameters
+    reindeer_reproduce = 0
+    # reindeer should have impacts between red and fallow deer
+    reindeer_gain_from_grass = 0
+    reindeer_gain_from_trees =0
+    reindeer_gain_from_scrub =0
+    reindeer_gain_from_saplings = 0
+    reindeer_gain_from_young_scrub = 0
+    exp_chance_reproduceSapling = 0
+    exp_chance_reproduceYoungScrub =  0
+    exp_chance_regrowGrass = 0
+    duration = 0
+    tree_reduction = 0
+
+
+    random.seed(1)
+    np.random.seed(1)
+    
+    # run the model
+    model = KneppModel(initial_roe, roe_deer_reproduce, roe_deer_gain_from_saplings, roe_deer_gain_from_trees, roe_deer_gain_from_scrub, roe_deer_gain_from_young_scrub, roe_deer_gain_from_grass,
+                        chance_youngScrubMatures, chance_saplingBecomingTree, chance_reproduceSapling,chance_reproduceYoungScrub, chance_regrowGrass, 
+                        chance_grassOutcompetedByTree, chance_grassOutcompetedByScrub, chance_scrubOutcompetedByTree, 
+                        ponies_gain_from_saplings, ponies_gain_from_trees, ponies_gain_from_scrub, ponies_gain_from_young_scrub, ponies_gain_from_grass, 
+                        cattle_reproduce, cows_gain_from_grass, cows_gain_from_trees, cows_gain_from_scrub, cows_gain_from_saplings, cows_gain_from_young_scrub, 
+                        fallow_deer_reproduce, fallow_deer_gain_from_saplings, fallow_deer_gain_from_trees, fallow_deer_gain_from_scrub, fallow_deer_gain_from_young_scrub, fallow_deer_gain_from_grass,
+                        red_deer_reproduce, red_deer_gain_from_saplings, red_deer_gain_from_trees, red_deer_gain_from_scrub, red_deer_gain_from_young_scrub, red_deer_gain_from_grass,
+                        tamworth_pig_reproduce, tamworth_pig_gain_from_saplings,tamworth_pig_gain_from_trees,tamworth_pig_gain_from_scrub,tamworth_pig_gain_from_young_scrub,tamworth_pig_gain_from_grass,
+                        european_bison_reproduce, european_bison_gain_from_grass, european_bison_gain_from_trees, european_bison_gain_from_scrub, european_bison_gain_from_saplings, european_bison_gain_from_young_scrub,
+                        european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
+                        fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
+                        chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
+                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False, 
+                        max_time = 300, max_roe = 500)
+
+
+    model.reset_randomizer(seed=1)
+
+    model.run_model()
+   
+    results = model.datacollector.get_model_vars_dataframe()
+
+
+    # get the last year
+    end = results.iloc[-1]
+
+    # did roe deer go over? 
+    if end["Time"] >= 5999:
+        # if it ran for 500 years, check the last 100 years and calculate gradient - has it reached equilibrium?
+        last_hundred = results.loc[results["Time"] >= 4800]
+        # only species I care about - ones that aren't controlled
+        uncontrolled_only = last_hundred[['Grassland', 'Woodland', 'Thorny Scrub', 'Roe deer']]
+
+        gradients = {}
+
+        for column in uncontrolled_only.columns:
+            
+            # Get the population values for the current species
+            population_values = uncontrolled_only[column].values
+            # Create an array representing the years (assuming the index represents the years)
+            years = uncontrolled_only.index.values
+            # Fit a first-degree polynomial (line) to the population values
+            coefficients = np.polyfit(years, population_values, deg=1)
+            # Extract the gradient (slope) from the coefficients
+            gradient = coefficients[0]
+            # Store the gradient in the dictionary
+            gradients[column] = gradient
+
+        # if it's at equilibrium, save parameters
+        if abs(gradients["Roe deer"]) < 0.01 and abs(gradients["Thorny Scrub"]) < 0.01 and abs(gradients["Grassland"]) < 0.01 and abs(gradients["Woodland"]) < 0.01:
+
+            # does it pass habitat criteria for 2009?? 
+            if (results['Time'] == 49) and (results['Grassland'] <= 89.9) and (results['Grassland'] >= 26.8) and (results['Thorny Scrub'] <= 51.8) and (results["Thorny Scrub"] >= 4.3) and (results["Woodland"] <= 17) and (results["Woodland"] >= 5.8) and (results["Roe deer"] <= 40) and (results["Roe deer"] >= 12):
+                
+                # does it pass habitat criteria for 2009?? 
+                if (results['Time'] == 183) and (results['Grassland'] <= 36.8) and (results['Grassland'] >= 16.8) and (results['Thorny Scrub'] <= 61.8) and (results["Thorny Scrub"] >= 41.8) and (results["Woodland"] <= 31.5) and (results["Woodland"] >= 11.5) and (results["Roe deer"] <= 80) and (results["Roe deer"] >= 20):
+                    
+                    # append it to excel
+                    outputs = pd.DataFrame(output_parameters)
+
+                    ws.append(outputs["variable"].tolist())
+                    wb.save("GA_outputs_ABM.xlsx")
+                else:
+                    print("failed 2020 filters")
+            else:
+                print("failed 2009 filters")
+
+
+            # pd.DataFrame(outputs).to_excel(f'optim_outputs_{n}.xlsx', header=False, index=False)
+
+        else: 
+            print("failed equilibrium")
+    else:
+        print("failed roe")
+
+
+
+
+
+
+for n in range(10):
+    print("now running", n)
+    save_results()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def graph_results():
+    # output_parameters = run_optimizer()
+
+    # define the parameters
+    initial_roe = 12
+
+    chance_reproduceSapling = 0.06
+    chance_reproduceYoungScrub = 0.87
+    chance_regrowGrass = 0.17
+    chance_saplingBecomingTree = 0.007
+    chance_youngScrubMatures = 0.005
+    chance_scrubOutcompetedByTree = 0.81
+    chance_grassOutcompetedByTree = 0.21
+    chance_grassOutcompetedByScrub = 0.22
+
+    # consumer values
+    roe_deer_reproduce = 0.68
+    roe_deer_gain_from_grass = 0.1/10
+    roe_deer_gain_from_trees = 0.22/10
+    roe_deer_gain_from_scrub = 0.21/10
+    roe_deer_gain_from_saplings = 0.05/10
+    roe_deer_gain_from_young_scrub = 0.059/10
+    fallow_deer_reproduce = 0.33
+    fallow_deer_gain_from_grass = 0.61
+    fallow_deer_gain_from_trees = 0.14
+    fallow_deer_gain_from_scrub = 0.2
+    fallow_deer_gain_from_saplings = 0.06
+    fallow_deer_gain_from_young_scrub = 0.0086
+    red_deer_reproduce = 0.53
+    red_deer_gain_from_grass = 0.74
+    red_deer_gain_from_trees = 0.15
+    red_deer_gain_from_scrub = 0.035
+    red_deer_gain_from_saplings = 0.06
+    red_deer_gain_from_young_scrub = 0.063
+    ponies_gain_from_grass = 0.38
+    ponies_gain_from_trees = 0.3
+    ponies_gain_from_scrub = 0.17
+    ponies_gain_from_saplings = 0.07
+    ponies_gain_from_young_scrub = 0.098
+    cattle_reproduce = 0.0066
+    cows_gain_from_grass = 0.43
+    cows_gain_from_trees = 0.18
+    cows_gain_from_scrub = 0.24
+    cows_gain_from_saplings = 0.036
+    cows_gain_from_young_scrub = 0.036
+    tamworth_pig_reproduce = 0.33
+    tamworth_pig_gain_from_grass = 0.37
+    tamworth_pig_gain_from_trees = 0.066
+    tamworth_pig_gain_from_scrub = 0.29
+    tamworth_pig_gain_from_saplings = 0.019
+    tamworth_pig_gain_from_young_scrub = 0.015
+    chance_scrub_saves_saplings = 0.54
+
+
+    # chance_reproduceSapling = output_parameters["variable"][0]
+    # chance_reproduceYoungScrub = output_parameters["variable"][1]
+    # chance_regrowGrass =output_parameters["variable"][2]
+    # chance_saplingBecomingTree =output_parameters["variable"][3]
+    # chance_youngScrubMatures =output_parameters["variable"][4]
+    # chance_scrubOutcompetedByTree =output_parameters["variable"][5]
+    # chance_grassOutcompetedByTree =output_parameters["variable"][6]
+    # chance_grassOutcompetedByScrub =output_parameters["variable"][7]
+
+    # # consumer values
+    # roe_deer_reproduce =output_parameters["variable"][8]
+    # roe_deer_gain_from_grass =output_parameters["variable"][9]
+    # roe_deer_gain_from_trees =output_parameters["variable"][10]
+    # roe_deer_gain_from_scrub = output_parameters["variable"][11]
+    # roe_deer_gain_from_saplings = output_parameters["variable"][12]
+    # roe_deer_gain_from_young_scrub = output_parameters["variable"][13]
+    # fallow_deer_reproduce = output_parameters["variable"][14]
+    # fallow_deer_gain_from_grass = output_parameters["variable"][15]
+    # fallow_deer_gain_from_trees = output_parameters["variable"][16]
+    # fallow_deer_gain_from_scrub = output_parameters["variable"][17]
+    # fallow_deer_gain_from_saplings = output_parameters["variable"][18]
+    # fallow_deer_gain_from_young_scrub = output_parameters["variable"][19]
+    # red_deer_reproduce = output_parameters["variable"][20]
+    # red_deer_gain_from_grass = output_parameters["variable"][21]
+    # red_deer_gain_from_trees = output_parameters["variable"][22]
+    # red_deer_gain_from_scrub = output_parameters["variable"][23]
+    # red_deer_gain_from_saplings = output_parameters["variable"][24]
+    # red_deer_gain_from_young_scrub = output_parameters["variable"][25]
+    # ponies_gain_from_grass = output_parameters["variable"][26]
+    # ponies_gain_from_trees = output_parameters["variable"][27]
+    # ponies_gain_from_scrub = output_parameters["variable"][28]
+    # ponies_gain_from_saplings = output_parameters["variable"][29]
+    # ponies_gain_from_young_scrub = output_parameters["variable"][30]
+    # cattle_reproduce = output_parameters["variable"][31]
+    # cows_gain_from_grass = output_parameters["variable"][32]
+    # cows_gain_from_trees = output_parameters["variable"][33]
+    # cows_gain_from_scrub = output_parameters["variable"][34]
+    # cows_gain_from_saplings = output_parameters["variable"][35]
+    # cows_gain_from_young_scrub = output_parameters["variable"][36]
+    # tamworth_pig_reproduce = output_parameters["variable"][37]
+    # tamworth_pig_gain_from_grass =output_parameters["variable"][38]
+    # tamworth_pig_gain_from_trees = output_parameters["variable"][39]
+    # tamworth_pig_gain_from_scrub = output_parameters["variable"][40]
+    # tamworth_pig_gain_from_saplings =output_parameters["variable"][41]
+    # tamworth_pig_gain_from_young_scrub = output_parameters["variable"][42]
+    # chance_scrub_saves_saplings = output_parameters["variable"][43]
+    # stocking values
+    fallowDeer_stocking_forecast = 247
+    cattle_stocking_forecast = 81
+    redDeer_stocking_forecast = 35
+    tamworthPig_stocking_forecast = 7
+    exmoor_stocking_forecast = 15
+    initial_wood = 0.058
+    initial_grass = 0.899
+    initial_scrub = 0.043
 
     introduced_species_stocking_forecast = 0
 
@@ -358,6 +590,8 @@ def graph_results():
     tree_reduction = 0
 
     
+
+
     random.seed(1)
     np.random.seed(1)
     
@@ -389,6 +623,8 @@ def graph_results():
 
     # how many years did it run? 
     end = final_results.iloc[-1]
+
+    print(end)
     end_year = end[["Time"]].item() + 2
 
     # does it pass the filters - conditions?
@@ -671,3 +907,247 @@ def graph_results():
 
 
 # graph_results()
+
+
+
+
+
+
+
+
+
+
+
+
+
+def objectiveFunction_test(x):
+
+    # define the parameters (12)
+    chance_reproduceSapling = x[0]
+    chance_reproduceYoungScrub = x[1]
+    chance_regrowGrass = x[2]
+    chance_saplingBecomingTree =x[3]
+    chance_youngScrubMatures = x[4]
+    chance_scrubOutcompetedByTree = x[5]
+    chance_grassOutcompetedByTree = x[6]
+    chance_grassOutcompetedByScrub = x[7]
+
+    # initial values
+    roe_deer_reproduce = x[8]
+    roe_deer_gain_from_grass = x[9]
+    roe_deer_gain_from_trees =  x[9] / 2
+    roe_deer_gain_from_scrub =  x[9] / 2
+    roe_deer_gain_from_saplings =  x[9] / 5
+    roe_deer_gain_from_young_scrub =  x[9] / 5
+
+    fallow_deer_reproduce = x[10]
+    fallow_deer_gain_from_grass = x[11]
+    fallow_deer_gain_from_trees = x[11]/ 2
+    fallow_deer_gain_from_scrub = x[11]/ 2
+    fallow_deer_gain_from_saplings = x[11]/ 5
+    fallow_deer_gain_from_young_scrub = x[11]/ 5
+    red_deer_reproduce = x[12]
+    red_deer_gain_from_grass =x[13]
+    red_deer_gain_from_trees = x[13]/2
+    red_deer_gain_from_scrub = x[13]/2
+    red_deer_gain_from_saplings = x[13]/5
+    red_deer_gain_from_young_scrub =x[13]/5
+    ponies_gain_from_grass = x[14]
+    ponies_gain_from_trees =x[14]/2
+    ponies_gain_from_scrub = x[14]/2
+    ponies_gain_from_saplings =x[14]/5
+    ponies_gain_from_young_scrub = x[14]/5
+    cattle_reproduce = x[15]
+    cows_gain_from_grass = x[16]
+    cows_gain_from_trees = x[16]/2
+    cows_gain_from_scrub = x[16]/2
+    cows_gain_from_saplings =x[16]/5
+    cows_gain_from_young_scrub = x[16]/5
+    tamworth_pig_reproduce = x[17]
+    tamworth_pig_gain_from_grass = x[18]
+    tamworth_pig_gain_from_trees = x[18]/2
+    tamworth_pig_gain_from_scrub = x[18]/2
+    tamworth_pig_gain_from_saplings = x[18]/5
+    tamworth_pig_gain_from_young_scrub = x[18]/5
+    chance_scrub_saves_saplings = x[19]
+
+    european_bison_reproduce = 0
+    # bison should have higher impact than any other consumer
+    european_bison_gain_from_grass =  0
+    european_bison_gain_from_trees =0
+    european_bison_gain_from_scrub =0
+    european_bison_gain_from_saplings = 0
+    european_bison_gain_from_young_scrub = 0  
+    # euro elk parameters
+    european_elk_reproduce = 0
+    # bison should have higher impact than any other consumer
+    european_elk_gain_from_grass =  0
+    european_elk_gain_from_trees = 0
+    european_elk_gain_from_scrub = 0
+    european_elk_gain_from_saplings =  0
+    european_elk_gain_from_young_scrub =  0
+    # reindeer parameters
+    reindeer_reproduce = 0
+    # reindeer should have impacts between red and fallow deer
+    reindeer_gain_from_grass = 0
+    reindeer_gain_from_trees =0
+    reindeer_gain_from_scrub =0
+    reindeer_gain_from_saplings = 0
+    reindeer_gain_from_young_scrub = 0
+    # stocking values
+    initial_roe = 12
+    fallowDeer_stocking_forecast = 247
+    cattle_stocking_forecast = 81
+    redDeer_stocking_forecast = 35
+    tamworthPig_stocking_forecast = 7
+    exmoor_stocking_forecast = 15
+    initial_wood = 0.058
+    initial_grass = 0.899
+    initial_scrub = 0.043
+
+    introduced_species_stocking_forecast = 0
+    exp_chance_reproduceSapling = 0
+    exp_chance_reproduceYoungScrub =  0
+    exp_chance_regrowGrass = 0
+    duration = 0
+    tree_reduction = 0
+
+    
+    random.seed(1)
+    np.random.seed(1)
+    
+    # run the model
+    model = KneppModel(initial_roe, roe_deer_reproduce, roe_deer_gain_from_saplings, roe_deer_gain_from_trees, roe_deer_gain_from_scrub, roe_deer_gain_from_young_scrub, roe_deer_gain_from_grass,
+                        chance_youngScrubMatures, chance_saplingBecomingTree, chance_reproduceSapling,chance_reproduceYoungScrub, chance_regrowGrass, 
+                        chance_grassOutcompetedByTree, chance_grassOutcompetedByScrub, chance_scrubOutcompetedByTree, 
+                        ponies_gain_from_saplings, ponies_gain_from_trees, ponies_gain_from_scrub, ponies_gain_from_young_scrub, ponies_gain_from_grass, 
+                        cattle_reproduce, cows_gain_from_grass, cows_gain_from_trees, cows_gain_from_scrub, cows_gain_from_saplings, cows_gain_from_young_scrub, 
+                        fallow_deer_reproduce, fallow_deer_gain_from_saplings, fallow_deer_gain_from_trees, fallow_deer_gain_from_scrub, fallow_deer_gain_from_young_scrub, fallow_deer_gain_from_grass,
+                        red_deer_reproduce, red_deer_gain_from_saplings, red_deer_gain_from_trees, red_deer_gain_from_scrub, red_deer_gain_from_young_scrub, red_deer_gain_from_grass,
+                        tamworth_pig_reproduce, tamworth_pig_gain_from_saplings,tamworth_pig_gain_from_trees,tamworth_pig_gain_from_scrub,tamworth_pig_gain_from_young_scrub,tamworth_pig_gain_from_grass,
+                        european_bison_reproduce, european_bison_gain_from_grass, european_bison_gain_from_trees, european_bison_gain_from_scrub, european_bison_gain_from_saplings, european_bison_gain_from_young_scrub,
+                        european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
+                        fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
+                        chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
+                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False)
+
+
+    model.reset_randomizer(seed=1)
+
+    model.run_model()
+
+    # remember the results of the model (dominant conditions, # of agents)
+    results = model.datacollector.get_model_vars_dataframe()
+
+    # get the last year
+    end = results.iloc[-1]
+
+
+    # if it's < 6000, return a high number (means roe deer were too high)
+    if end["Time"] < 303:
+        print("failed roe", end['Roe deer'])
+        return 10000 + end['Roe deer']
+
+    else:
+
+
+        # find the middle of each filter
+        filtered_result = (
+            # pre-reintro model
+            ((((list(results.loc[results['Time'] == 49, 'Roe deer'])[0])-26)/13)**2) +
+            ((((list(results.loc[results['Time'] == 49, 'Grassland'])[0])-58.4)/30.4)**2) +
+            ((((list(results.loc[results['Time'] == 49, 'Thorny Scrub'])[0])-28.1)/14.1)**2) +
+            ((((list(results.loc[results['Time'] == 49, 'Woodland'])[0])-11.4)/5.4)**2) +
+            # March 2019
+            ((((list(results.loc[results['Time'] == 169, 'Fallow deer'])[0])-278)/278)**2) +
+            ((((list(results.loc[results['Time'] == 169, 'Red deer'])[0])-37)/37)**2) +
+            # March 2020
+            ((((list(results.loc[results['Time'] == 181, 'Fallow deer'])[0])-247)/247)**2) +
+            ((((list(results.loc[results['Time'] == 181, 'Red deer'])[0])-35)/35)**2) +
+            ((((list(results.loc[results['Time'] == 181, 'Longhorn cattle'])[0])-81)/81)**2) +
+            # May 2020
+            ((((list(results.loc[results['Time'] == 183, 'Exmoor pony'])[0])-15)/15)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Longhorn cattle'])[0])-81)/81)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Roe deer'])[0])-50)/25)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Grassland'])[0])-26.8)/13.8)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Thorny Scrub'])[0])-51.8)/25.8)**2) +
+            ((((list(results.loc[results['Time'] == 183, 'Woodland'])[0])-21.5)/10.5)**2) +
+            # Tamworth pigs: average pop between 2015-2021 (based monthly data) = 15 
+            ((((statistics.mean(list(results.loc[results['Time'] > 121, 'Tamworth pigs'])))-15)/15)**2)
+
+            )
+
+        # only print the last year's result if it's reasonably close to the filters
+        if filtered_result < 50:
+            print("r:", filtered_result)
+            with pd.option_context('display.max_columns',None):
+                just_nodes = results[results['Time'] == 303]
+                just_nodes_2 = results[results['Time'] == 183]
+                print(just_nodes_2[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
+                print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
+        else:
+            print("n:", int(filtered_result))
+            
+        # return the output
+        return filtered_result
+   
+
+
+
+
+
+
+
+def run_optimizer_test():
+    # Define the bounds
+    bds = np.array([
+        [0,0.2],[0,1],[0,1],[0.0017,0.0083],[0.0024,0.028],
+        [0,1], # mature scrub competition
+        [0,1],[0,1], # grass competition
+        
+        # roe parameters
+        [0.1,0.75],[0,1],
+        # [0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        # # fallow deer parameters
+        [0.3,0.75],[0,1],
+        # [0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        # # red deer
+        [0.3,0.75],[0,1],
+        # [0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        # # exmoor pony parameters
+                [0,1],
+        # [0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        # # cattle parameters
+        [0,0.5],[0,1],
+        # [0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        # # pig parameters
+        [0,0.75],[0,1],
+        # [0,0.33],[0,0.33],[0,0.1],[0,0.1],
+
+        # # sapling protection parameter
+        [0,1]
+        ])
+
+
+    # popsize and maxiter are defined at the top of the page, was 10x100
+    algorithm_param = {'max_num_iteration':10,
+                    'population_size':25,\
+                    'mutation_probability':0.1,\
+                    'elit_ratio': 0.01,\
+                    'crossover_probability': 0.5,\
+                    'parents_portion': 0.3,\
+                    'crossover_type':'uniform',\
+                    'max_iteration_without_improv': 2}
+
+
+    optimization =  ga(function = objectiveFunction_test, dimension = 20, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
+    optimization.run()
+    outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
+    # return excel with rows = output values and number of filters passed
+    # pd.DataFrame(outputs).to_excel('optim_outputs_test.xlsx', header=False, index=False)
+    return optimization.output_dict
+
+
+# run_optimizer_test()
