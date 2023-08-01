@@ -146,7 +146,7 @@ class KneppModel(mesa.Model):
         # then add the herbivores as points
         for _ in range(initial_roe): # number of roe deer
             field = random.choice(fields) # randomly pick field
-            energy = np.random.uniform(0, 1)
+            energy = 0
             roe = roe_deer_agent(
                 unique_id=uuid.uuid4().int,
                 model = self,
@@ -217,7 +217,7 @@ class KneppModel(mesa.Model):
                 crs=self.space.crs,
                 geometry=field.random_point(),
                 field_id=field.unique_id,
-                energy = np.random.uniform(0, 1),
+                energy = 0,
                 move = movement, 
                 eat = eat_habitats
             )
@@ -245,7 +245,7 @@ class KneppModel(mesa.Model):
                 crs=self.space.crs,
                 geometry=field.random_point(),
                 field_id=field.unique_id,
-                energy = np.random.uniform(0, 1),
+                energy = 0,
                 condition = "piglet",
                 move = movement, 
                 eat = eat_habitats
@@ -259,7 +259,7 @@ class KneppModel(mesa.Model):
                 crs=self.space.crs,
                 geometry=field.random_point(),
                 field_id=field.unique_id,
-                energy = np.random.uniform(0, 1),
+                energy = 0,
                 condition = "sow",
                 move = movement, 
                 eat = eat_habitats
@@ -273,7 +273,7 @@ class KneppModel(mesa.Model):
                 crs=self.space.crs,
                 geometry=field.random_point(),
                 field_id=field.unique_id,
-                energy = np.random.uniform(0, 1),
+                energy = 0,
                 condition = "boar",
                 move = movement, 
                 eat = eat_habitats
@@ -327,6 +327,7 @@ class KneppModel(mesa.Model):
         if self.reintroduction == True:
             # March 2009
             if self.schedule.time == 49:
+            
                 self.add_herbivores(exmoor_pony_agent, 23, grazer_move) 
                 self.add_herbivores(longhorn_cattle_agent, 53, grazer_move)
                 number_sows = random.randint(4,8)
@@ -335,6 +336,7 @@ class KneppModel(mesa.Model):
   
             # March 2010
             if self.schedule.time == 61:
+
                 outputs = self.datacollector.get_model_vars_dataframe()
                 if (outputs.iloc[-1]["Roe deer"] <= 160): # don't let roe deer explode
                     # exmoor ponies
@@ -363,6 +365,7 @@ class KneppModel(mesa.Model):
 
             # March 2011
             if self.schedule.time == 73:
+                
                 outputs = self.datacollector.get_model_vars_dataframe()
                 # exmoor ponies
                 if outputs.iloc[73]['Exmoor pony'] >= 15: 
@@ -954,7 +957,8 @@ class KneppModel(mesa.Model):
                 results = self.datacollector.get_model_vars_dataframe() 
                 ten_years_ago = self.schedule.time - 120
 
-                # check once per year if it's at equilibrium or if roe deer explode
+                # check once per year if it's at equilibrium or if roe deer explode 
+                # print(results.iloc[-1]["Roe deer"])
                 if self.experiment_growth == False and self.experiment_wood == False and self.experiment_linear_growth == False and self.schedule.time >= self.max_time or (results.iloc[-1]["Roe deer"] >= self.max_roe) or (results.iloc[-1]["Roe deer"] == 0):                                    
                 
                 # remove roe deer criteria for landscape graph
@@ -1264,6 +1268,11 @@ class KneppModel(mesa.Model):
                 if results.iloc[-1]['Tamworth pigs'] > self.tamworthPig_stocking_forecast:
                     number_to_subtract = int(-self.tamworthPig_stocking_forecast + int(results.iloc[-1]['Tamworth pigs']))
                     self.remove_pig(tamworth_pig_agent,number_to_subtract,0,0)  
+        
+        else:
+            results = self.datacollector.get_model_vars_dataframe()
+            print("time", self.schedule.time, "roe deer", results.iloc[-1]["Roe deer"], "scrub", results.iloc[-1]["Thorny Scrub"], "wood", results.iloc[-1]["Woodland"], "grass", results.iloc[-1]["Grassland"])
+
                   
 
 

@@ -142,7 +142,6 @@ def objectiveFunction(x):
     end = results.iloc[-1]
 
     if end["Time"] < 303:
-        print("failed roe", end['Roe deer'])
         return 1000 + end['Roe deer']
 
 
@@ -176,7 +175,7 @@ def objectiveFunction(x):
             )
 
         # only print the last year's result if it's reasonably close to the filters
-        if filtered_result < 50:
+        if filtered_result < 10:
             print("r:", filtered_result)
             with pd.option_context('display.max_columns',None):
                 just_nodes = results[results['Time'] == 303]
@@ -184,6 +183,7 @@ def objectiveFunction(x):
                 print(just_nodes_2[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
                 print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
         else:
+            print(results)
             print("n:", int(filtered_result))
             
         # return the output
@@ -191,34 +191,32 @@ def objectiveFunction(x):
     
 
 
-
-
 def run_optimizer():
     # Define the bounds
     bds = np.array([
-        [0,0.2],[0,1],[0,1],[0.0017,0.0083],[0.0024,0.028],
+        [0,0.2],[0,1],[0.1,1],[0.0017,0.0083],[0.0024,0.028],
         [0,1], # mature scrub competition
         [0,1],[0,1], # grass competition
         # roe parameters
-        [0.1,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.1,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # fallow deer parameters
-        [0.3,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.2,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # red deer
-        [0.3,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0.2,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # exmoor pony parameters
-                [0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+                [0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # cattle parameters
-        [0,0.5],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0,0.5],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # pig parameters
-        [0,0.75],[0,0.75],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
+        [0,0.75],[0,1],[0,0.33],[0,0.33],[0,0.1],[0,0.1],
         # sapling protection parameter
         [0,1]])
 
 
 
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':5,
-                    'population_size':100,\
+    algorithm_param = {'max_num_iteration':2,
+                    'population_size':10,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -248,6 +246,56 @@ def save_results():
     output_parameters = run_optimizer()
 
     initial_roe = 12
+
+
+    # # now run it to 600: do they pass roe and equilibrium criteria? 
+    # chance_reproduceSapling = 0.1
+    # chance_reproduceYoungScrub = 0.2
+    # chance_regrowGrass = 0.2
+    # chance_saplingBecomingTree = 0.001
+    # chance_youngScrubMatures = 0.003
+    # chance_scrubOutcompetedByTree = 0.3
+    # chance_grassOutcompetedByTree = 0.4
+    # chance_grassOutcompetedByScrub = 0.5
+
+    # # consumer values
+    # roe_deer_reproduce = 0.1
+    # roe_deer_gain_from_grass = 0.1
+    # roe_deer_gain_from_trees = 0.1
+    # roe_deer_gain_from_scrub = 0.1
+    # roe_deer_gain_from_saplings =0.1
+    # roe_deer_gain_from_young_scrub = 0.1
+    # fallow_deer_reproduce = 0.1
+    # fallow_deer_gain_from_grass = 0.1
+    # fallow_deer_gain_from_trees = 0.1
+    # fallow_deer_gain_from_scrub = 0.1
+    # fallow_deer_gain_from_saplings = 0.1
+    # fallow_deer_gain_from_young_scrub = 0.1
+    # red_deer_reproduce = 0.1
+    # red_deer_gain_from_grass = 0.1
+    # red_deer_gain_from_trees =0.1
+    # red_deer_gain_from_scrub = 0.1
+    # red_deer_gain_from_saplings = 0.1
+    # red_deer_gain_from_young_scrub = 0.1
+    # ponies_gain_from_grass = 0.1
+    # ponies_gain_from_trees =0.1
+    # ponies_gain_from_scrub = 0.1
+    # ponies_gain_from_saplings = 0.1
+    # ponies_gain_from_young_scrub = 0.1
+    # cattle_reproduce = 0.1
+    # cows_gain_from_grass = 0.1
+    # cows_gain_from_trees = 0.1
+    # cows_gain_from_scrub = 0.1
+    # cows_gain_from_saplings = 0.1
+    # cows_gain_from_young_scrub =0.1
+    # tamworth_pig_reproduce = 0.1
+    # tamworth_pig_gain_from_grass = 0.1
+    # tamworth_pig_gain_from_trees = 0.1
+    # tamworth_pig_gain_from_scrub = 0.1
+    # tamworth_pig_gain_from_saplings = 0.1
+    # tamworth_pig_gain_from_young_scrub = 0.1
+    # chance_scrub_saves_saplings = 0.1
+
 
     # now run it to 600: do they pass roe and equilibrium criteria? 
     chance_reproduceSapling = output_parameters["variable"][0]
@@ -356,7 +404,7 @@ def save_results():
                         exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
                         experiment_growth = False, experiment_wood = False, experiment_linear_growth = False, 
-                        max_time = 300, max_roe = 500)
+                        max_time = 6000, max_roe = 500)
 
 
     model.reset_randomizer(seed=1)
@@ -364,6 +412,9 @@ def save_results():
     model.run_model()
    
     results = model.datacollector.get_model_vars_dataframe()
+
+
+    print(results)
 
 
     # get the last year
@@ -391,14 +442,17 @@ def save_results():
             # Store the gradient in the dictionary
             gradients[column] = gradient
 
+        print("gradeints", gradients)
+
         # if it's at equilibrium, save parameters
         if abs(gradients["Roe deer"]) < 0.01 and abs(gradients["Thorny Scrub"]) < 0.01 and abs(gradients["Grassland"]) < 0.01 and abs(gradients["Woodland"]) < 0.01:
 
-            # does it pass habitat criteria for 2009?? 
-            if (results['Time'] == 49) and (results['Grassland'] <= 89.9) and (results['Grassland'] >= 26.8) and (results['Thorny Scrub'] <= 51.8) and (results["Thorny Scrub"] >= 4.3) and (results["Woodland"] <= 17) and (results["Woodland"] >= 5.8) and (results["Roe deer"] <= 40) and (results["Roe deer"] >= 12):
+            habs_2009 = results.loc[results["Time"] == 49]
+            if (habs_2009['Grassland'].item() <= 89.9) and (habs_2009['Grassland'].item() >= 26.8) and (habs_2009['Thorny Scrub'].item() <= 51.8) and (habs_2009["Thorny Scrub"].item() >= 4.3) and (habs_2009["Woodland"].item() <= 17) and (habs_2009["Woodland"].item() >= 5.8) and (habs_2009["Roe deer"].item() <= 40) and (habs_2009["Roe deer"].item() >= 12):
                 
-                # does it pass habitat criteria for 2009?? 
-                if (results['Time'] == 183) and (results['Grassland'] <= 36.8) and (results['Grassland'] >= 16.8) and (results['Thorny Scrub'] <= 61.8) and (results["Thorny Scrub"] >= 41.8) and (results["Woodland"] <= 31.5) and (results["Woodland"] >= 11.5) and (results["Roe deer"] <= 80) and (results["Roe deer"] >= 20):
+                habs_2020 = results.loc[results["Time"] == 183]
+                # does it pass habitat criteria for 2020?
+                if (habs_2020['Grassland'].item() <= 36.8) and (habs_2020['Grassland'].item() >= 16.8) and (habs_2020['Thorny Scrub'].item() <= 61.8) and (habs_2020["Thorny Scrub"].item() >= 41.8) and (habs_2020["Woodland"].item() <= 31.5) and (habs_2020["Woodland"].item() >= 11.5) and (habs_2020["Roe deer"].item() <= 80) and (habs_2020["Roe deer"].item() >= 20):
                     
                     # append it to excel
                     outputs = pd.DataFrame(output_parameters)

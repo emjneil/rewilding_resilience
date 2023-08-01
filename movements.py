@@ -11,7 +11,6 @@ def eat_trees(self, habitat_patch, eatenTrees):
     habitat_patch.edibles["trees"] -= eatenTrees
     return eatenTrees
 
-
 def eat_scrub(self, habitat_patch, eatenScrub):
     habitat_patch.edibles["scrub"] -= eatenScrub
     return eatenScrub
@@ -47,7 +46,6 @@ def eat_habitats(self, habitat_patch, my_dietary_preference, gain_from_saplings,
 
             if my_choice == "saplings":
                 eatenSaps = math.ceil((1-self.energy)/gain_from_saplings)
-
                 if random.random() < (self.model.chance_scrub_saves_saplings*100*((habitat_patch.edibles["scrub"])/(4000*(size_of_patch/10000)))): 
                     eatenSaps = 0
                 if eatenSaps >= habitat_patch.edibles["saplings"]:
@@ -76,7 +74,6 @@ def eat_habitats(self, habitat_patch, my_dietary_preference, gain_from_saplings,
                 eat_youngscrub(habitat_patch, eatenYoungScrub)
                 self.energy += (gain_from_young_scrub * eatenYoungScrub)
                 self.count_eaten[my_choice] += eatenYoungScrub
-
             elif my_choice == "grass":
                 eatenGrass = math.ceil((1-self.energy)/gain_from_grass)
                 if eatenGrass >= habitat_patch.edibles["grass"]:
@@ -87,12 +84,13 @@ def eat_habitats(self, habitat_patch, my_dietary_preference, gain_from_saplings,
         else:
             break
     
-        
     # don't let energy be above 1; do a break and >= 1
     if self.energy > 1:
         self.energy = 1
     # what is my energy now?
     return self.energy
+
+
 
 
 def browser_move(self, FieldAgent):
