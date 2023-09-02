@@ -112,7 +112,7 @@ def objectiveFunction(x):
     exp_chance_regrowGrass =  best_parameter["chance_regrowGrass"].item() * growth_changes
 
     
-    tree_reduction = 0
+    noise_amount = 0
 
     random.seed(1)
     np.random.seed(1)
@@ -130,7 +130,7 @@ def objectiveFunction(x):
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, noise_amount,
                         far_fallowDeer_stocking_forecast, far_cattle_stocking_forecast, far_redDeer_stocking_forecast, far_tamworthPig_stocking_forecast, far_exmoor_stocking_forecast,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
                         experiment_growth = True, experiment_wood = False, experiment_linear_growth = False, run_ga = True

@@ -287,6 +287,8 @@ def vegetation_reproduction():
 
 
 
+
+
 # # # # # # # # # Perturbation 2 # # # # # # # # #
 
 
@@ -561,7 +563,12 @@ def stochastic_exp():
 
 
 
-stochastic_exp()
+# stochastic_exp()
+
+
+
+
+
 
 
 

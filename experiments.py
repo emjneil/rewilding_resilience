@@ -6,21 +6,21 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-# REMEMBER TO DEFINE THE EQUILIBRIUM POINT IN MODEL.PY 
-
 def experiment_growth():
     
     # pick the best parameter set
-    best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
+    best_parameter = pd.read_csv('abm_best_ps.csv').drop(['Unnamed: 0'], axis=1)
     final_results_list = []
     run_number = 0
 
     # make a list of my choices (what growth rates to change, and for how long)
-    growth_changes_list = random.choices([0, 0.1, 0.25, 0.5, 0.75, 1], k=100)
-    duration_choice_list = random.choices([1, 3, 12, 24, 36], k=100)
+    growth_changes_list = random.choices([0, 0.01, 0.1, 0.5, 1, 1.5], k=5)
+    duration_choice_list = np.random.uniform(0,50,5)
 
     # take the accepted parameters, and go row by row, running the model
     for i,j in zip(growth_changes_list, duration_choice_list):
+
+        print(i, int(j))
         
         # set parameters
         chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item()
@@ -99,14 +99,12 @@ def experiment_growth():
         exmoor_stocking_forecast = 15
 
         growth_changes = i
-        # pick duration (in months)
-        duration_choice = j
 
         # experiment parameters
-        exp_chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item() * i
-        exp_chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item() * i
-        exp_chance_regrowGrass =  best_parameter["chance_regrowGrass"].item() * i
-        duration = j
+        exp_chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item() * growth_changes
+        exp_chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item() * growth_changes
+        exp_chance_regrowGrass =  best_parameter["chance_regrowGrass"].item() * growth_changes
+        duration = int(j*12)
 
         tree_reduction = 0
 
@@ -128,7 +126,8 @@ def experiment_growth():
                             chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                             exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                             reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                            experiment_growth = True, experiment_wood = False, experiment_linear_growth = False
+                            experiment_growth = True, experiment_wood = False, experiment_linear_growth = False, 
+                            max_time = 6500, max_roe = 500
                             )
 
 
@@ -144,8 +143,8 @@ def experiment_growth():
 
         # we only want to look at the habitat types        
         results['run_number'] = run_number
-        results['growth'] = i
-        results['duration'] = j
+        results['growth'] = growth_changes
+        results['duration'] = duration
 
         habs_only = results[['Roe deer', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Time', 'run_number', 'growth', 'duration']]
         
@@ -163,7 +162,7 @@ def experiment_growth():
     final_df["Duration"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['duration'],5)], axis=0))
 
 
-    final_df.to_csv("experiment_growth.csv")
+    final_df.to_csv("experiment_growth_test.csv")
 
 
 # experiment_growth()
@@ -174,20 +173,47 @@ def experiment_growth():
 
 
 
-def experiment_wood():
+
+def experiment_linear_growth():
     
     # pick the best parameter set
-    best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
+    best_parameter = pd.read_csv('abm_best_ps.csv').drop(['Unnamed: 0'], axis=1)
+    # best_parameter = pd.read_csv('abm_mosaic_param.csv')
+
     final_results_list = []
     run_number = 0
+
+    # is there a critical amount of noise?
+    noise_amount = np.random.choice([0, 0.001, 0.002, 0.003], 2)
+
+    total_noise = []
+
+    for i in noise_amount: 
+        steps = 0
+        sd = 0
+        while steps < 6000:
+            # start with mean of 1 and sd of 0
+            sd += i
+            noise = np.random.normal(1, sd, 1).item()
+            total_noise.append(noise)
+            steps += 1
     
-    # make a list of my random choices (how many trees to reduce)
-    tree_reduction_list = random.choices([0, 0.5, 0.10, 0.25, 0.50, 0.75, 1], k=100)
+    # to array
+    all_noise_arr = np.asarray(total_noise)
+    all_noise = all_noise_arr.reshape(2,6000)
+
+
+     # for each starting condition, run the model from 2005 and keep track of final conditions
+    run_number = 0
+    final_results_list = []
+
 
     # take the accepted parameters, and go row by row, running the model
-    for i in tree_reduction_list:
+    for i, j in zip (noise_amount, all_noise):
+        
 
-        # set parameters
+        print(run_number)
+
         chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item()
         chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item()
         chance_regrowGrass =  best_parameter["chance_regrowGrass"].item()
@@ -199,9 +225,9 @@ def experiment_wood():
         chance_scrub_saves_saplings = best_parameter["chance_scrub_saves_saplings"].item()
 
         initial_roe = 12
+        initial_wood = 0.058
         initial_grass = 0.899
         initial_scrub = 0.043
-        initial_wood = 0.058
 
         roe_deer_reproduce = best_parameter["roe_deer_reproduce"].item()
         roe_deer_gain_from_grass =  best_parameter["roe_deer_gain_from_grass"].item()
@@ -267,17 +293,15 @@ def experiment_wood():
         # experiment parameters
         exp_chance_reproduceSapling = 0
         exp_chance_reproduceYoungScrub =  0
-        exp_chance_regrowGrass =  0
+        exp_chance_regrowGrass = 0
         duration = 0
-
-        tree_reduction = i
+        tree_reduction = j
 
         random.seed(1)
         np.random.seed(1)
 
         model = KneppModel(initial_roe, roe_deer_reproduce, roe_deer_gain_from_saplings, roe_deer_gain_from_trees, roe_deer_gain_from_scrub, roe_deer_gain_from_young_scrub, roe_deer_gain_from_grass,
-                            chance_youngScrubMatures, chance_saplingBecomingTree, 
-                            chance_reproduceSapling, chance_reproduceYoungScrub, chance_regrowGrass, 
+                            chance_youngScrubMatures, chance_saplingBecomingTree, chance_reproduceSapling,chance_reproduceYoungScrub, chance_regrowGrass, 
                             chance_grassOutcompetedByTree, chance_grassOutcompetedByScrub, chance_scrubOutcompetedByTree, 
                             ponies_gain_from_saplings, ponies_gain_from_trees, ponies_gain_from_scrub, ponies_gain_from_young_scrub, ponies_gain_from_grass, 
                             cattle_reproduce, cows_gain_from_grass, cows_gain_from_trees, cows_gain_from_scrub, cows_gain_from_saplings, cows_gain_from_young_scrub, 
@@ -290,8 +314,8 @@ def experiment_wood():
                             chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                             exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                             reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                            experiment_growth = False, experiment_wood = True, experiment_linear_growth = False
-                            )
+                            experiment_growth = False, experiment_wood = False, experiment_linear_growth = True, 
+                            max_time = 6000, max_roe = 500)
 
 
         model.reset_randomizer(seed=1)
@@ -299,86 +323,69 @@ def experiment_wood():
         model.run_model()
 
         run_number +=1
-        print(run_number)
 
         results = model.datacollector.get_model_vars_dataframe()
+        results["Noise"] = i
+        results["run_number"] = run_number
 
-        # we only want to look at the habitat types        
-        results['run_number'] = run_number
-        results['tree_reduction'] = i
-
-
-        habs_only = results[['Roe deer', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Time', 'run_number', 'tree_reduction']]
-
+        habs_only = results[['Roe deer', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Time', 'run_number', 'Noise', 'Grass', 'Trees', 'Mature Scrub', 'Saplings', 'Young Scrub']]
+        
         final_results_list.append(habs_only)
-
 
 
     # append to dataframe
     experiment_growth = pd.concat(final_results_list)
 
+
     final_df =  pd.DataFrame(
-                    (experiment_growth[['Roe deer', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground']].values.flatten()), columns=['Abundance'])
-    final_df["Run Number"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['run_number'],5)], axis=0))
-    final_df["Time"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['Time'], 5)], axis=0))
-    final_df["Ecosystem Element"] = pd.DataFrame(np.tile(['Roe deer', "Grassland", "Woodland", "Thorny Scrub", "Bare ground"], len(experiment_growth)))
-    final_df["Tree Reduction"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['tree_reduction'],5)], axis=0))
+                    (experiment_growth[['Roe deer', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Grass', 'Trees', 'Mature Scrub', 'Saplings', 'Young Scrub']].values.flatten()), columns=['Abundance'])
+    final_df["Run Number"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['run_number'],10)], axis=0))
+    final_df["Time"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['Time'], 10)], axis=0))
+    final_df["Ecosystem Element"] = pd.DataFrame(np.tile(['Roe deer', "Grassland", "Woodland", "Thorny Scrub", "Bare ground", 'Grass', 'Trees', 'Mature Scrub', 'Saplings', 'Young Scrub'], len(experiment_growth)))
+    final_df["Noise"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['Noise'],10)], axis=0))
 
 
-    final_df.to_csv("experiment_trees.csv")
+    # final_df =  pd.DataFrame(
+    #                 (experiment_growth[['Roe deer', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground']].values.flatten()), columns=['Abundance'])
+    # final_df["Run Number"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['run_number'],5)], axis=0))
+    # final_df["Time"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['Time'], 5)], axis=0))
+    # final_df["Ecosystem Element"] = pd.DataFrame(np.tile(['Roe deer', "Grassland", "Woodland", "Thorny Scrub", "Bare ground"], len(experiment_growth)))
+    # final_df["Noise"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['Noise'],5)], axis=0))
+
+
+    final_df.to_csv("experiment_linear_growth_test.csv")
+
+
+
+# experiment_linear_growth()
 
 
 
 
-# experiment_wood()
 
 
 
 
 
+def no_control():
 
+    # loop through all PS
+    best_parameters = pd.read_csv('abm_final_results_accepted_params_reshaped.csv').drop(['Unnamed: 0'], axis=1)
 
-def experiment_linear_growth():
-    
-    # pick the best parameter set
-    best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
     final_results_list = []
     run_number = 0
-    
-    # change starting conditions and stocking densities - do end states depend on these? 
-    initial_stocking = [1]
-    stocking_changes = random.choices([1, 0, 0.5, 2, 5], k=100)
-    stocking_changes_list = initial_stocking + stocking_changes
 
-    # now do initial vegetation values
-    initial_wood_list = [0.058]
-    initial_grass_list = [0.899]
-    initial_scrub_list = [0.043]
-    # add the rest
-    for i in range(100):
-        wood = random.uniform(0, 1)
-        grass = random.uniform(0, 1)
-        scrub = random.uniform(0, 1)
-        initial_veg = [wood, grass, scrub]
-        # normalize them if they're greater than 100%
-        if (wood+grass+scrub) > 1:
-            norm = [float(i)/sum(initial_veg) for i in initial_veg]
-            wood = norm[0]
-            grass = norm[1]
-            scrub = norm[2]
-        # append to list
-        initial_wood_list.append(wood)
-        initial_grass_list.append(grass)
-        initial_scrub_list.append(scrub)
 
-     # for each starting condition, run the model from 2005 and keep track of final conditions
+    # for each starting condition, run the model from 2005 and keep track of final conditions
     run_number = 0
-    final_df = {}
+    final_results_list = []
 
 
     # take the accepted parameters, and go row by row, running the model
-    for i, w, g, s in zip(stocking_changes_list, initial_wood_list, initial_grass_list, initial_scrub_list):
-        
+    for index, best_parameter in best_parameters.iterrows():        
+
+        print(run_number)
+
         chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item()
         chance_reproduceYoungScrub =  best_parameter["chance_reproduceYoungScrub"].item()
         chance_regrowGrass =  best_parameter["chance_regrowGrass"].item()
@@ -389,10 +396,10 @@ def experiment_linear_growth():
         chance_grassOutcompetedByScrub = best_parameter["chance_grassOutcompetedByScrub"].item()
         chance_scrub_saves_saplings = best_parameter["chance_scrub_saves_saplings"].item()
 
-        initial_roe = int(12 * i)
-        initial_wood = w
-        initial_grass = g
-        initial_scrub = s
+        initial_roe = 12
+        initial_wood = 0.058
+        initial_grass = 0.899
+        initial_scrub = 0.043
 
         roe_deer_reproduce = best_parameter["roe_deer_reproduce"].item()
         roe_deer_gain_from_grass =  best_parameter["roe_deer_gain_from_grass"].item()
@@ -449,17 +456,29 @@ def experiment_linear_growth():
         european_elk_gain_from_young_scrub =  random.uniform(red_deer_gain_from_young_scrub-(red_deer_gain_from_young_scrub*0.1), red_deer_gain_from_young_scrub)
 
         # forecasting parameters
-        fallowDeer_stocking_forecast = int(247 * i)
-        cattle_stocking_forecast = int(81 * i)
-        redDeer_stocking_forecast = int(35 * i)
-        tamworthPig_stocking_forecast = int(7 * i)
-        exmoor_stocking_forecast = int(15 * i)
+        exmoor_stocking_forecast = int(15 * 1.8)
+        fallowDeer_stocking_forecast = int(247 * 0.95)
+        cattle_stocking_forecast = int(81 * 0.23)
+        redDeer_stocking_forecast = int(35 * 2.3)
+        tamworthPig_stocking_forecast = int(7 * 0.56)
+
+        # fallowDeer_stocking_forecast = 247
+        # cattle_stocking_forecast = 81
+        # redDeer_stocking_forecast = 35
+        # tamworthPig_stocking_forecast = 7
+        # exmoor_stocking_forecast = 15
 
         # experiment parameters
+        # exp_chance_reproduceSapling = 0
+        # exp_chance_reproduceYoungScrub =  0
+        # exp_chance_regrowGrass = 0
+        # duration = 0
+
         exp_chance_reproduceSapling = 0
         exp_chance_reproduceYoungScrub =  0
         exp_chance_regrowGrass = 0
         duration = 0
+
         tree_reduction = 0
 
         random.seed(1)
@@ -479,7 +498,8 @@ def experiment_linear_growth():
                             chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                             exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                             reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                            experiment_growth = False, experiment_wood = False, experiment_linear_growth = True)
+                            experiment_growth = False, experiment_wood = False, experiment_linear_growth = False, 
+                            max_time = 3000, max_roe = 500)
 
 
         model.reset_randomizer(seed=1)
@@ -487,32 +507,38 @@ def experiment_linear_growth():
         model.run_model()
 
         run_number +=1
-        print(run_number)
 
         results = model.datacollector.get_model_vars_dataframe()
+        results["run_number"] = run_number
 
-        # we only want to look at the habitat types
-        habs_only = results[['Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Roe deer']]
-        initial = habs_only.iloc[0]
-        end = habs_only.iloc[-1]
+        habs_only = results[['Roe deer', 'Exmoor pony', 'Longhorn cattle', 'Fallow deer', 'Red deer', 'Tamworth pigs', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground', 'Time', 'run_number']]
 
-        # collect their conditions
-        final_df[run_number] = {"Grassland Initial": initial['Grassland'].item(), "Grassland End": end['Grassland'].item(), 
-                                "Woodland Initial": initial['Woodland'].item(), "Woodland End": end['Woodland'].item(), 
-                                "Thorny Scrub Initial": initial['Thorny Scrub'].item(), "Thorny Scrub End": end['Thorny Scrub'].item(), 
-                                "Stocking Density": i,
-                                "Run Number": run_number
-        }
+
+        print(habs_only)
+        
+        final_results_list.append(habs_only)
 
 
     # append to dataframe
-    forecasting = pd.DataFrame.from_dict(final_df, "index")
-
-    print(forecasting)
-
-    forecasting.to_csv("experiment_linear_growth.csv")
+    experiment_growth = pd.concat(final_results_list)
 
 
 
+    final_df =  pd.DataFrame(
+                    (experiment_growth[['Roe deer', 'Exmoor pony', 'Longhorn cattle', 'Fallow deer', 'Red deer', 'Tamworth pigs', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground']].values.flatten()), columns=['Abundance'])
+    final_df["Run Number"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['run_number'],10)], axis=0))
+    final_df["Time"] = pd.DataFrame(np.concatenate([np.repeat(experiment_growth['Time'], 10)], axis=0))
+    final_df["Ecosystem Element"] = pd.DataFrame(np.tile(['Roe deer', 'Exmoor pony', 'Longhorn cattle', 'Fallow deer', 'Red deer', 'Tamworth pigs', 'Grassland', 'Woodland', 'Thorny Scrub', 'Bare ground'], len(experiment_growth)))
+    final_df["Experiment"] = "33% Scrubland"
 
-experiment_linear_growth()
+
+    # final_df.to_csv("experiment_ga_no_control.csv")
+    # final_df.to_csv("experiment_ps1_all_100_runs.csv")
+    # final_df.to_csv("experiment_ga_outputs_all_100_runs.csv")
+
+    # GA experiments
+    final_df.to_csv("ga1_all_timeseries_abm_scrubland.csv")
+
+
+
+no_control()

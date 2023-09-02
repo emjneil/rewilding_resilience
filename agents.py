@@ -75,6 +75,7 @@ class FieldAgent(mg.GeoAgent):
 
 
 
+
     # define a random point to add herbivores to
     def random_point(self):
 
@@ -213,7 +214,7 @@ class roe_deer_agent(mg.GeoAgent):
         # eat
         habitat_patch = self.model.space.get_region_by_id(self.field_id)
         self.energy = self.eat(self, habitat_patch, my_dietary_preference="browser", gain_from_saplings = self.model.roe_deer_gain_from_saplings, gain_from_trees=self.model.roe_deer_gain_from_trees, gain_from_scrub=self.model.roe_deer_gain_from_scrub, gain_from_young_scrub=self.model.roe_deer_gain_from_young_scrub, gain_from_grass=self.model.roe_deer_gain_from_grass)
-        # if roe deer's energy is less than 0, die
+        # if roe deer's energy is less than 1, die
         if self.energy < 1:
             self.model.space.remove_herbivore_agent(self)
             self.model.schedule.remove(self)

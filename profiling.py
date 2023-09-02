@@ -6,7 +6,8 @@ from memory_profiler import profile
 
 
 # pick the best parameter set
-best_parameter = pd.read_csv('best_parameter_set.csv').drop(['Unnamed: 0'], axis=1)
+best_parameter = pd.read_csv("abm_passed_habs_params.csv").drop("Unnamed: 0", axis=1)
+best_parameter = best_parameter.loc[best_parameter["run_number"] == 37968.0]
 
 
 chance_reproduceSapling = best_parameter["chance_reproduceSapling"].item()
@@ -20,19 +21,14 @@ chance_grassOutcompetedByScrub = best_parameter["chance_grassOutcompetedByScrub"
 chance_scrub_saves_saplings = best_parameter["chance_scrub_saves_saplings"].item()
 
 initial_roe = 12
-
-initial_wood = random.uniform(0, 1)
-initial_grass = random.uniform(0, 1)
-initial_scrub = random.uniform(0, 1)
-
-initial_veg = [initial_wood, initial_grass, initial_scrub]
-
-# normalize them if they're greater than 100%
-if (initial_wood+initial_grass+initial_scrub) > 1:
-    norm = [float(i)/sum(initial_veg) for i in initial_veg]
-    initial_wood = norm[0]
-    initial_grass = norm[1]
-    initial_scrub = norm[2]
+initial_wood = 0.058
+initial_grass = 0.899
+initial_scrub = 0.043
+fallowDeer_stocking = 247
+cattle_stocking = 81
+redDeer_stocking = 35
+tamworthPig_stocking = 7
+exmoor_stocking = 15
 
 roe_deer_reproduce = best_parameter["roe_deer_reproduce"].item()
 roe_deer_gain_from_grass =  best_parameter["roe_deer_gain_from_grass"].item()
@@ -89,24 +85,25 @@ european_elk_gain_from_saplings =  random.uniform(red_deer_gain_from_saplings-(r
 european_elk_gain_from_young_scrub =  random.uniform(red_deer_gain_from_young_scrub-(red_deer_gain_from_young_scrub*0.1), red_deer_gain_from_young_scrub)
 
 # forecasting parameters
-fallowDeer_stocking_forecast = 247
-cattle_stocking_forecast = 81 
-redDeer_stocking_forecast = 35
-tamworthPig_stocking_forecast = 7 
-exmoor_stocking_forecast = 15
+fallowDeer_stocking_forecast = 247*5
+cattle_stocking_forecast = 81 *5
+redDeer_stocking_forecast = 35*5
+tamworthPig_stocking_forecast = 7 *5
+exmoor_stocking_forecast = 15*5
 
 # growth experiment parameters
 exp_chance_reproduceSapling = 0
 exp_chance_reproduceYoungScrub = 0
 exp_chance_regrowGrass = 0
 duration = 0
-
+noise_amount = 0
 
 
 #### Run model #### 
 
 random.seed(1)
 np.random.seed(1)
+
 
 model = KneppModel(initial_roe, roe_deer_reproduce, roe_deer_gain_from_saplings, roe_deer_gain_from_trees, roe_deer_gain_from_scrub, roe_deer_gain_from_young_scrub, roe_deer_gain_from_grass,
                     chance_youngScrubMatures, chance_saplingBecomingTree, chance_reproduceSapling,chance_reproduceYoungScrub, chance_regrowGrass, 
@@ -120,9 +117,10 @@ model = KneppModel(initial_roe, roe_deer_reproduce, roe_deer_gain_from_saplings,
                     european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                     fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                     chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                    exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration,
-                    reintroduction = True, introduce_euroBison = False, introduce_elk = False,
-                    experiment_growth = False, experiment_wood = False)
+                    exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, noise_amount,
+                    reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
+                    experiment_growth = False, experiment_wood = False, experiment_linear_growth = False, 
+                    max_time = 3001, max_roe = 500)
 
 
 model.reset_randomizer(seed=1)

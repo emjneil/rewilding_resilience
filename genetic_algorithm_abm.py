@@ -106,7 +106,7 @@ def objectiveFunction(x):
     exp_chance_reproduceYoungScrub =  0
     exp_chance_regrowGrass = 0
     duration = 0
-    tree_reduction = 0
+    noise_amount = 0
     
     
     random.seed(1)
@@ -125,7 +125,7 @@ def objectiveFunction(x):
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, noise_amount,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
                         experiment_growth = False, experiment_wood = False, experiment_linear_growth = False,
                         max_time = 303, max_roe = 160)
@@ -142,6 +142,7 @@ def objectiveFunction(x):
     end = results.iloc[-1]
 
     if end["Time"] < 303:
+        # print("time", end["Time"], "roe", end['Roe deer'])
         return 1000 + end['Roe deer']
 
 
@@ -183,7 +184,7 @@ def objectiveFunction(x):
                 print(just_nodes_2[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
                 print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
         else:
-            print(results)
+            # print(results)
             print("n:", int(filtered_result))
             
         # return the output
@@ -215,8 +216,8 @@ def run_optimizer():
 
 
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':2,
-                    'population_size':10,\
+    algorithm_param = {'max_num_iteration':10,
+                    'population_size':50,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -237,7 +238,7 @@ def run_optimizer():
 
 
 # make sure the GA outputs pass the ecological criteria
-def save_results(): 
+def save_results(n): 
 
 
     wb = load_workbook("GA_outputs_ABM.xlsx")
@@ -382,7 +383,7 @@ def save_results():
     exp_chance_reproduceYoungScrub =  0
     exp_chance_regrowGrass = 0
     duration = 0
-    tree_reduction = 0
+    noise_amount = 0
 
 
     random.seed(1)
@@ -401,10 +402,10 @@ def save_results():
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, noise_amount,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
                         experiment_growth = False, experiment_wood = False, experiment_linear_growth = False, 
-                        max_time = 6000, max_roe = 500)
+                        max_time = 6184, max_roe = 500)
 
 
     model.reset_randomizer(seed=1)
@@ -421,11 +422,11 @@ def save_results():
     end = results.iloc[-1]
 
     # did roe deer go over? 
-    if end["Time"] >= 5999:
+    if end["Time"] >= 6183:
         # if it ran for 500 years, check the last 100 years and calculate gradient - has it reached equilibrium?
-        last_hundred = results.loc[results["Time"] >= 4800]
+        last_hundred = results.loc[results["Time"] >= 4984]
         # only species I care about - ones that aren't controlled
-        uncontrolled_only = last_hundred[['Grassland', 'Woodland', 'Thorny Scrub', 'Roe deer']]
+        uncontrolled_only = last_hundred[['Grassland', 'Woodland', 'Thorny Scrub']]
 
         gradients = {}
 
@@ -442,10 +443,10 @@ def save_results():
             # Store the gradient in the dictionary
             gradients[column] = gradient
 
-        print("gradeints", gradients)
+        print("gradients", gradients)
 
         # if it's at equilibrium, save parameters
-        if abs(gradients["Roe deer"]) < 0.01 and abs(gradients["Thorny Scrub"]) < 0.01 and abs(gradients["Grassland"]) < 0.01 and abs(gradients["Woodland"]) < 0.01:
+        if abs(gradients["Thorny Scrub"]) < 0.01 and abs(gradients["Grassland"]) < 0.01 and abs(gradients["Woodland"]) < 0.01:
 
             habs_2009 = results.loc[results["Time"] == 49]
             if (habs_2009['Grassland'].item() <= 89.9) and (habs_2009['Grassland'].item() >= 26.8) and (habs_2009['Thorny Scrub'].item() <= 51.8) and (habs_2009["Thorny Scrub"].item() >= 4.3) and (habs_2009["Woodland"].item() <= 17) and (habs_2009["Woodland"].item() >= 5.8) and (habs_2009["Roe deer"].item() <= 40) and (habs_2009["Roe deer"].item() >= 12):
@@ -479,9 +480,7 @@ def save_results():
 
 for n in range(10):
     print("now running", n)
-    save_results()
-
-
+    save_results(n)
 
 
 
@@ -505,53 +504,57 @@ def graph_results():
     # define the parameters
     initial_roe = 12
 
-    chance_reproduceSapling = 0.06
-    chance_reproduceYoungScrub = 0.87
-    chance_regrowGrass = 0.17
-    chance_saplingBecomingTree = 0.007
-    chance_youngScrubMatures = 0.005
-    chance_scrubOutcompetedByTree = 0.81
-    chance_grassOutcompetedByTree = 0.21
-    chance_grassOutcompetedByScrub = 0.22
+    chance_reproduceSapling = 0.00467853
+    chance_reproduceYoungScrub = 0.20199645
+    chance_regrowGrass = 0.58117603
+    chance_saplingBecomingTree = 0.00817171
+    chance_youngScrubMatures = 0.02102306
+    chance_scrubOutcompetedByTree = 0.93981108
+    chance_grassOutcompetedByTree = 0.99167741
+    chance_grassOutcompetedByScrub = 0.87749032
+
+
+
 
     # consumer values
-    roe_deer_reproduce = 0.68
-    roe_deer_gain_from_grass = 0.1/10
-    roe_deer_gain_from_trees = 0.22/10
-    roe_deer_gain_from_scrub = 0.21/10
-    roe_deer_gain_from_saplings = 0.05/10
-    roe_deer_gain_from_young_scrub = 0.059/10
-    fallow_deer_reproduce = 0.33
-    fallow_deer_gain_from_grass = 0.61
-    fallow_deer_gain_from_trees = 0.14
-    fallow_deer_gain_from_scrub = 0.2
-    fallow_deer_gain_from_saplings = 0.06
-    fallow_deer_gain_from_young_scrub = 0.0086
-    red_deer_reproduce = 0.53
-    red_deer_gain_from_grass = 0.74
-    red_deer_gain_from_trees = 0.15
-    red_deer_gain_from_scrub = 0.035
-    red_deer_gain_from_saplings = 0.06
-    red_deer_gain_from_young_scrub = 0.063
-    ponies_gain_from_grass = 0.38
-    ponies_gain_from_trees = 0.3
-    ponies_gain_from_scrub = 0.17
-    ponies_gain_from_saplings = 0.07
-    ponies_gain_from_young_scrub = 0.098
-    cattle_reproduce = 0.0066
-    cows_gain_from_grass = 0.43
-    cows_gain_from_trees = 0.18
-    cows_gain_from_scrub = 0.24
-    cows_gain_from_saplings = 0.036
-    cows_gain_from_young_scrub = 0.036
-    tamworth_pig_reproduce = 0.33
-    tamworth_pig_gain_from_grass = 0.37
-    tamworth_pig_gain_from_trees = 0.066
-    tamworth_pig_gain_from_scrub = 0.29
-    tamworth_pig_gain_from_saplings = 0.019
-    tamworth_pig_gain_from_young_scrub = 0.015
-    chance_scrub_saves_saplings = 0.54
+    roe_deer_reproduce = 0.17445799
+    roe_deer_gain_from_grass = 0.56009373
+    roe_deer_gain_from_trees = 0.11911977
+    roe_deer_gain_from_scrub = 0.29986075
+    roe_deer_gain_from_saplings = 0.0856839
+    roe_deer_gain_from_young_scrub = 0.05947772
+    fallow_deer_reproduce = 0.39195785
+    fallow_deer_gain_from_grass = 0.83763772
+    fallow_deer_gain_from_trees = 0.29528548
+    fallow_deer_gain_from_scrub = 0.18476422
+    fallow_deer_gain_from_saplings =0.01012263
+    fallow_deer_gain_from_young_scrub = 0.03249691
 
+    red_deer_reproduce = 0.48688245
+    red_deer_gain_from_grass = 0.26229007
+    red_deer_gain_from_trees = 0.1050134
+    red_deer_gain_from_scrub = 0.176014
+    red_deer_gain_from_saplings = 0.02791867
+    red_deer_gain_from_young_scrub = 0.09647497
+    ponies_gain_from_grass = 0.55695387
+    ponies_gain_from_trees = 0.19209629
+    ponies_gain_from_scrub = 0.29372824
+    ponies_gain_from_saplings = 0.01354418
+    ponies_gain_from_young_scrub = 0.02212655
+
+    cattle_reproduce = 0.05713023
+    cows_gain_from_grass =0.74908796
+    cows_gain_from_trees = 0.07747514
+    cows_gain_from_scrub =0.08937436
+    cows_gain_from_saplings = 0.01153383
+    cows_gain_from_young_scrub = 0.01949243
+    tamworth_pig_reproduce = 0.44378035
+    tamworth_pig_gain_from_grass =0.15797278
+    tamworth_pig_gain_from_trees = 0.32577062
+    tamworth_pig_gain_from_scrub = 0.1287777
+    tamworth_pig_gain_from_saplings = 0.03192308
+    tamworth_pig_gain_from_young_scrub = 0.0464303
+    chance_scrub_saves_saplings = 0.71950459
 
     # chance_reproduceSapling = output_parameters["variable"][0]
     # chance_reproduceYoungScrub = output_parameters["variable"][1]
@@ -641,7 +644,7 @@ def graph_results():
     exp_chance_reproduceYoungScrub =  0
     exp_chance_regrowGrass = 0
     duration = 0
-    tree_reduction = 0
+    noise_amount = 0
 
     
 
@@ -662,9 +665,10 @@ def graph_results():
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, noise_amount,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False)
+                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False,
+                        max_time = 6184, max_roe = 500)
 
 
     model.reset_randomizer(seed=1)
@@ -1064,7 +1068,7 @@ def objectiveFunction_test(x):
     exp_chance_reproduceYoungScrub =  0
     exp_chance_regrowGrass = 0
     duration = 0
-    tree_reduction = 0
+    noise_amount = 0
 
     
     random.seed(1)
@@ -1083,7 +1087,7 @@ def objectiveFunction_test(x):
                         european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
                         fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
-                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, noise_amount,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
                         experiment_growth = False, experiment_wood = False, experiment_linear_growth = False)
 

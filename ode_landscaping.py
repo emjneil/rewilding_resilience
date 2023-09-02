@@ -14,13 +14,13 @@ import random
 species = ['exmoorPony','fallowDeer','grasslandParkland','longhornCattle','redDeer','roeDeer','tamworthPig','thornyScrub','woodland']
 
 
-# # we want to check if our original PS passes the requirements or not
-# accepted_parameters = pd.read_csv('ode_best_ps.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
+# we want to check if our original PS passes the requirements or not
+accepted_parameters = pd.read_csv('ode_best_ps.csv').drop(['Unnamed: 0', 'accepted?', 'ID'], axis=1)
 
-# r = accepted_parameters.loc[accepted_parameters['growth'].notnull(), ['growth']]
-# r = pd.DataFrame(r.values.reshape(1, len(species)), columns = species).to_numpy().flatten()
+r = accepted_parameters.loc[accepted_parameters['growth'].notnull(), ['growth']]
+r = pd.DataFrame(r.values.reshape(1, len(species)), columns = species).to_numpy().flatten()
 
-# A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
+A = accepted_parameters.drop(['X0', 'growth', 'Unnamed: 0.1'], axis=1).dropna().to_numpy()
 
 
 
@@ -64,7 +64,7 @@ def landscaping():
     # stocking_changes = np.random.uniform(low=0,high=100,size=999) # this one is for looking at landscaping
     # stocking_changes = np.insert(stocking_changes, 0, 1, axis=0)
 
-    stocking_changes = np.random.uniform(low=1,high=1,size=1000)
+    stocking_changes = np.random.uniform(low=99,high=100,size=1)
 
     # now do initial vegetation values - we start with everything normalised to 1
     initial_wood_list = [1]
@@ -72,7 +72,7 @@ def landscaping():
     initial_scrub_list = [1]
     counter = 0
     # add the rest
-    while counter < 1000:
+    while counter < 1:
         wood = random.uniform(0, 17.2) # this is equivalent to 100%
         grass = random.uniform(0, 1.1)
         scrub = random.uniform(0, 23.3)
@@ -313,13 +313,13 @@ def landscaping():
     all_timeseries = pd.concat(all_timeseries)
 
     # save to csv
-    forecasting.to_csv("resilience_landscape_eem_current.csv")
-    all_timeseries.to_csv("timeseries_eem_current.csv")
+    forecasting.to_csv("resilience_landscape_eem_current_test.csv")
+    all_timeseries.to_csv("timeseries_eem_current_test.csv")
 
 
 
 
-# landscaping()
+landscaping()
 
 
 
@@ -842,4 +842,4 @@ def all_params():
 
 
 
-all_params()
+# all_params()

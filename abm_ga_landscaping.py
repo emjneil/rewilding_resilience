@@ -11,12 +11,13 @@ import random
 
 # ------ Optimization of the Knepp ABM model --------
 
-# alter one species at a time to get to 33% of each habitat type
-# save timeseries
+# increased grassland compared to current dynamics (33%), 
+# a prevention of collapse of thorny scrub (33%), 
+# and a woodland-dominant mosaic habitat (50%) with lesser amounts of scrub and grassland (25% each). 
 
 
 
-def objectiveFunction(x):
+def objectiveFunction_p1(x):
 
     # open the best parameter set
     best_ps = pd.read_excel("optimizer_outputs_resilience.xlsx",  engine="openpyxl")
@@ -39,11 +40,6 @@ def objectiveFunction(x):
     chance_grassOutcompetedByScrub = best_ps["chance_grassOutcompetedByScrub"].item()
 
     initial_roe = 12
-    fallowDeer_stocking = 247
-    cattle_stocking = 81
-    redDeer_stocking = 35
-    tamworthPig_stocking = 7
-    exmoor_stocking = 15
     initial_wood = 0.058
     initial_grass = 0.899
     initial_scrub = 0.043
@@ -143,7 +139,175 @@ def objectiveFunction(x):
                         chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
                         exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
                         reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
-                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False)
+                        experiment_growth = False, experiment_wood = False, experiment_linear_growth = False, 
+                        max_time = 3000, max_roe = 500)
+
+
+    model.reset_randomizer(seed=1)
+
+    model.run_model()
+
+    # remember the results of the model (dominant conditions, # of agents)
+    results = model.datacollector.get_model_vars_dataframe()
+
+    # increased grassland compared to current dynamics (33%), 
+    # a prevention of collapse of thorny scrub (33%), 
+    # and a woodland-dominant mosaic habitat (50%) with lesser amounts of scrub and grassland (25% each). 
+
+    filtered_result = (
+        # pre-reintro model
+        ((((list(results.loc[results['Time'] == 2999, 'Grassland'])[0])-25)/25)**2) +
+        ((((list(results.loc[results['Time'] == 2999, 'Thorny Scrub'])[0])-25)/25)**2) + 
+        ((((list(results.loc[results['Time'] == 2999, 'Woodland'])[0])-50)/50)**2)
+        )
+
+    # only print the last year's result if it's reasonably close to the filters
+    if filtered_result < 10:
+        print("r:", filtered_result)
+        with pd.option_context('display.max_columns',None):
+            just_nodes = results[results['Time'] == 2999]
+            print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
+    else:
+        print("n:", int(filtered_result))
+    
+    # return the output
+    return filtered_result
+   
+
+
+
+
+
+
+
+
+
+
+# in this one, we change growth rates temporarily 
+
+def objectiveFunction_p2(x):
+
+    # open the best parameter set
+    best_ps = pd.read_csv('abm_best_ps.csv').drop(['Unnamed: 0'], axis=1)
+
+    exmoor_stocking_change = x[0]
+    fallow_stocking_change = x[1]
+    cattle_stocking_change = x[2]
+    red_stocking_change = x[3]
+    pig_stocking_change = x[4]
+
+    # define the parameters
+    chance_reproduceSapling = best_ps["chance_reproduceSapling"].item()
+    chance_reproduceYoungScrub =  best_ps["chance_reproduceYoungScrub"].item()
+    chance_regrowGrass =  best_ps["chance_regrowGrass"].item()
+    chance_saplingBecomingTree =  best_ps["chance_saplingBecomingTree"].item()
+    chance_youngScrubMatures =  best_ps["chance_youngScrubMatures"].item()
+    chance_scrubOutcompetedByTree =  best_ps["chance_scrubOutcompetedByTree"].item()
+    chance_grassOutcompetedByTree =  best_ps["chance_grassOutcompetedByTree"].item()
+    chance_grassOutcompetedByScrub = best_ps["chance_grassOutcompetedByScrub"].item()
+
+    initial_roe = 12
+    initial_wood = 0.058
+    initial_grass = 0.899
+    initial_scrub = 0.043
+
+    roe_deer_reproduce = best_ps["roe_deer_reproduce"].item()
+    roe_deer_gain_from_grass =  best_ps["roe_deer_gain_from_grass"].item()
+    roe_deer_gain_from_trees =  best_ps["roe_deer_gain_from_trees"].item()
+    roe_deer_gain_from_scrub =  best_ps["roe_deer_gain_from_scrub"].item()
+    roe_deer_gain_from_saplings =  best_ps["roe_deer_gain_from_saplings"].item()
+    roe_deer_gain_from_young_scrub =  best_ps["roe_deer_gain_from_young_scrub"].item()
+    ponies_gain_from_grass =  best_ps["ponies_gain_from_grass"].item()
+    ponies_gain_from_trees =  best_ps["ponies_gain_from_trees"].item()
+    ponies_gain_from_scrub =  best_ps["ponies_gain_from_scrub"].item()
+    ponies_gain_from_saplings =  best_ps["ponies_gain_from_saplings"].item()
+    ponies_gain_from_young_scrub =  best_ps["ponies_gain_from_young_scrub"].item()
+    cattle_reproduce =  best_ps["cattle_reproduce"].item()
+    cows_gain_from_grass =  best_ps["cows_gain_from_grass"].item()
+    cows_gain_from_trees =  best_ps["cows_gain_from_trees"].item()
+    cows_gain_from_scrub =  best_ps["cows_gain_from_scrub"].item()
+    cows_gain_from_saplings =  best_ps["cows_gain_from_saplings"].item()
+    cows_gain_from_young_scrub =  best_ps["cows_gain_from_young_scrub"].item()
+    fallow_deer_reproduce =  best_ps["fallow_deer_reproduce"].item()
+    fallow_deer_gain_from_grass =  best_ps["fallow_deer_gain_from_grass"].item()
+    fallow_deer_gain_from_trees =  best_ps["fallow_deer_gain_from_trees"].item()
+    fallow_deer_gain_from_scrub =  best_ps["fallow_deer_gain_from_scrub"].item()
+    fallow_deer_gain_from_saplings =  best_ps["fallow_deer_gain_from_saplings"].item()
+    fallow_deer_gain_from_young_scrub =  best_ps["fallow_deer_gain_from_young_scrub"].item()  
+    red_deer_reproduce =  best_ps["red_deer_reproduce"].item()
+    red_deer_gain_from_grass =  best_ps["red_deer_gain_from_grass"].item()
+    red_deer_gain_from_trees =  best_ps["red_deer_gain_from_trees"].item()
+    red_deer_gain_from_scrub =  best_ps["red_deer_gain_from_scrub"].item()
+    red_deer_gain_from_saplings =  best_ps["red_deer_gain_from_saplings"].item()
+    red_deer_gain_from_young_scrub =  best_ps["red_deer_gain_from_young_scrub"].item()
+    tamworth_pig_reproduce =  best_ps["tamworth_pig_reproduce"].item()
+    tamworth_pig_gain_from_grass =  best_ps["tamworth_pig_gain_from_grass"].item()
+    tamworth_pig_gain_from_trees = best_ps["tamworth_pig_gain_from_trees"].item()
+    tamworth_pig_gain_from_scrub = best_ps["tamworth_pig_gain_from_scrub"].item()
+    tamworth_pig_gain_from_saplings =  best_ps["tamworth_pig_gain_from_saplings"].item()
+    tamworth_pig_gain_from_young_scrub =  best_ps["tamworth_pig_gain_from_young_scrub"].item()
+
+    # euro bison parameters
+    european_bison_reproduce = 0
+    # bison should have higher impact than any other consumer
+    european_bison_gain_from_grass =  0
+    european_bison_gain_from_trees =0
+    european_bison_gain_from_scrub =0
+    european_bison_gain_from_saplings = 0
+    european_bison_gain_from_young_scrub = 0  
+    # euro elk parameters
+    european_elk_reproduce = 0
+    # bison should have higher impact than any other consumer
+    european_elk_gain_from_grass =  0
+    european_elk_gain_from_trees = 0
+    european_elk_gain_from_scrub = 0
+    european_elk_gain_from_saplings =  0
+    european_elk_gain_from_young_scrub =  0
+    # reindeer parameters
+    reindeer_reproduce = 0
+    # reindeer should have impacts between red and fallow deer
+    reindeer_gain_from_grass = 0
+    reindeer_gain_from_trees =0
+    reindeer_gain_from_scrub =0
+    reindeer_gain_from_saplings = 0
+    reindeer_gain_from_young_scrub = 0
+    # forecasting parameters
+    fallowDeer_stocking_forecast = int(247 * fallow_stocking_change)
+    cattle_stocking_forecast = int(81 * cattle_stocking_change)
+    redDeer_stocking_forecast = int(35 * red_stocking_change)
+    tamworthPig_stocking_forecast = int(7 * pig_stocking_change)
+    exmoor_stocking_forecast = int(15 * exmoor_stocking_change)
+    introduced_species_stocking_forecast = 0
+    chance_scrub_saves_saplings = best_ps["chance_scrub_saves_saplings"].item()
+
+    # new resilience experiment parameters - not relevant here
+    exp_chance_reproduceSapling = best_ps["chance_reproduceSapling"].item() * 0.01
+    exp_chance_reproduceYoungScrub =  best_ps["chance_reproduceYoungScrub"].item() * 0.01
+    exp_chance_regrowGrass =  best_ps["chance_regrowGrass"].item() * 0.01
+    duration = 37*12
+    tree_reduction = 0
+    
+    
+    random.seed(1)
+    np.random.seed(1)
+    
+    # run the model
+    model = KneppModel(initial_roe, roe_deer_reproduce, roe_deer_gain_from_saplings, roe_deer_gain_from_trees, roe_deer_gain_from_scrub, roe_deer_gain_from_young_scrub, roe_deer_gain_from_grass,
+                        chance_youngScrubMatures, chance_saplingBecomingTree, chance_reproduceSapling,chance_reproduceYoungScrub, chance_regrowGrass, 
+                        chance_grassOutcompetedByTree, chance_grassOutcompetedByScrub, chance_scrubOutcompetedByTree, 
+                        ponies_gain_from_saplings, ponies_gain_from_trees, ponies_gain_from_scrub, ponies_gain_from_young_scrub, ponies_gain_from_grass, 
+                        cattle_reproduce, cows_gain_from_grass, cows_gain_from_trees, cows_gain_from_scrub, cows_gain_from_saplings, cows_gain_from_young_scrub, 
+                        fallow_deer_reproduce, fallow_deer_gain_from_saplings, fallow_deer_gain_from_trees, fallow_deer_gain_from_scrub, fallow_deer_gain_from_young_scrub, fallow_deer_gain_from_grass,
+                        red_deer_reproduce, red_deer_gain_from_saplings, red_deer_gain_from_trees, red_deer_gain_from_scrub, red_deer_gain_from_young_scrub, red_deer_gain_from_grass,
+                        tamworth_pig_reproduce, tamworth_pig_gain_from_saplings,tamworth_pig_gain_from_trees,tamworth_pig_gain_from_scrub,tamworth_pig_gain_from_young_scrub,tamworth_pig_gain_from_grass,
+                        european_bison_reproduce, european_bison_gain_from_grass, european_bison_gain_from_trees, european_bison_gain_from_scrub, european_bison_gain_from_saplings, european_bison_gain_from_young_scrub,
+                        european_elk_reproduce, european_elk_gain_from_grass, european_elk_gain_from_trees, european_elk_gain_from_scrub, european_elk_gain_from_saplings, european_elk_gain_from_young_scrub,
+                        fallowDeer_stocking_forecast, cattle_stocking_forecast, redDeer_stocking_forecast, tamworthPig_stocking_forecast, exmoor_stocking_forecast,
+                        chance_scrub_saves_saplings, initial_wood, initial_grass, initial_scrub,
+                        exp_chance_reproduceSapling, exp_chance_reproduceYoungScrub, exp_chance_regrowGrass, duration, tree_reduction,
+                        reintroduction = True, introduce_euroBison = False, introduce_elk = False, 
+                        experiment_growth = True, experiment_wood = False, experiment_linear_growth = False, 
+                        max_time = 3000, max_roe = 500)
 
 
     model.reset_randomizer(seed=1)
@@ -156,16 +320,14 @@ def objectiveFunction(x):
     # want 33% of everything
     filtered_result = (
         # pre-reintro model
-        ((((list(results.loc[results['Time'] == 5999, 'Grassland'])[0])-33)/33)**2) +
-        ((((list(results.loc[results['Time'] == 5999, 'Thorny Scrub'])[0])-33)/33)**2) +
-        ((((list(results.loc[results['Time'] == 5999, 'Woodland'])[0])-33)/33)**2)
+        ((((list(results.loc[results['Time'] == 2999, 'Woodland'])[0])-98)/98)**2)
         )
 
     # only print the last year's result if it's reasonably close to the filters
     if filtered_result < 10:
         print("r:", filtered_result)
         with pd.option_context('display.max_columns',None):
-            just_nodes = results[results['Time'] == 5999]
+            just_nodes = results[results['Time'] == 2999]
             print(just_nodes[["Time", "Roe deer", "Exmoor pony", "Fallow deer", "Longhorn cattle", "Red deer", "Tamworth pigs", "Grassland", "Woodland", "Thorny Scrub", "Bare ground"]])
     else:
         print("n:", int(filtered_result))
@@ -175,17 +337,29 @@ def objectiveFunction(x):
    
 
 
+
+
+
+
+
+
 def run_optimizer():
     # Define the bounds for stocking densities
     bds = np.array([
-        [0,10],[0,10],[0,10],[0,10],[0,10]]
-        # [0,25]
+        [0,3],[0,3],[0,3],[0,3],[0,3]]
+        # [1,1],[1,1],[1,1],[1,1],[1,1]]
         )
 
 
+# increased grassland compared to current dynamics (33%), 
+# a prevention of collapse of thorny scrub (33%), 
+# and a woodland-dominant mosaic habitat (50%) with lesser amounts of scrub and grassland (25% each). 
+
+
+
     # popsize and maxiter are defined at the top of the page, was 10x100
-    algorithm_param = {'max_num_iteration':10,
-                    'population_size':50,\
+    algorithm_param = {'max_num_iteration':5,
+                    'population_size':10,\
                     'mutation_probability':0.1,\
                     'elit_ratio': 0.01,\
                     'crossover_probability': 0.5,\
@@ -194,15 +368,25 @@ def run_optimizer():
                     'max_iteration_without_improv': 2}
 
 
-    optimization =  ga(function = objectiveFunction, dimension = 5, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
+    optimization =  ga(function = objectiveFunction_p1, dimension = 5, variable_type = 'real',variable_boundaries= bds, algorithm_parameters = algorithm_param, function_timeout=6000)
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('abm_landscaping_ga.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('abm_landscaping_ga_woodland_mosaic.xlsx', header=False, index=False)
     return optimization.output_dict
 
 
+
+
+
+
+
+
 run_optimizer()
+
+
+
+
 
 
 
@@ -241,11 +425,6 @@ def graph_results():
             chance_grassOutcompetedByScrub = row["chance_grassOutcompetedByScrub"]
 
             initial_roe = 12
-            fallowDeer_stocking = 247
-            cattle_stocking = 81
-            redDeer_stocking = 35
-            tamworthPig_stocking = 7
-            exmoor_stocking = 15
             initial_wood = 0.058
             initial_grass = 0.899
             initial_scrub = 0.043
@@ -410,11 +589,6 @@ def all_varied_together():
         chance_grassOutcompetedByScrub = row["chance_grassOutcompetedByScrub"]
 
         initial_roe = 12
-        fallowDeer_stocking = 247
-        cattle_stocking = 81
-        redDeer_stocking = 35
-        tamworthPig_stocking = 7
-        exmoor_stocking = 15
         initial_wood = 0.058
         initial_grass = 0.899
         initial_scrub = 0.043

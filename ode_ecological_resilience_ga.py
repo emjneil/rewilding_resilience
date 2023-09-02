@@ -285,6 +285,7 @@ def objectiveFunction_perturb1(x):
 
 
 
+
                                                         # # # # # Perturbation 2: Increasing amounts of noise # # # # # 
 
 
@@ -455,12 +456,12 @@ def objectiveFunction_perturb2(x): # stochasticity experiment
     noise = np.random.normal(1, sd, 1).item()
 
 
-    for y in range(1000): 
+    for y in range(500): 
         years_covered += 1            
         starting_values = last_values_2020.copy()
 
         # apply the perturbations; don't let it go below 0
-        if years_covered >= 516: 
+        if years_covered >= 16: 
             # increase the amount of noise over time
             sd += 0.003
             # noise term is SD and at every point, choose a random normal value that has mean of 0 and that SD.
@@ -488,7 +489,7 @@ def objectiveFunction_perturb2(x): # stochasticity experiment
 
 
         # after 100 years of perturbations (616) decrease woodland percentages by a number
-        if years_covered == 616: 
+        if years_covered == 116: 
             starting_values[8] = last_values_2020[8]  * 0.5
         else:
             starting_values[8] = last_values_2020[8]
@@ -507,7 +508,7 @@ def objectiveFunction_perturb2(x): # stochasticity experiment
     # reshape outputs
     combined_future = np.hstack(combined_future_runs)
     combined_future_times = np.hstack(combined_future_times)
-    y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 3000).transpose(),1)))
+    y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 1500).transpose(),1)))
     y_future = pd.DataFrame(data=y_future, columns=species)
     # put into df
     y_future['Time'] = combined_future_times
@@ -515,17 +516,14 @@ def objectiveFunction_perturb2(x): # stochasticity experiment
     # what is the mean across the last 100 years? to account for stochasticity
     filtered_result = (
         # end state should be = to previous state
-        ((((statistics.mean(list(y_future.loc[y_future["Time"] > 900, 'grasslandParkland'])))-0.08)/0.08)**2) +
-        ((((statistics.mean(list(y_future.loc[y_future["Time"] > 900, 'thornyScrub'])))-6.7)/6.7)**2) +
-        ((((statistics.mean(list(y_future.loc[y_future["Time"] > 900, 'woodland'])))-9.42)/9.42)**2))
-        # ((((((y_future.loc[y_future["Time"] == 1016, 'thornyScrub'].item())))-6.7)/6.7)**2) +
-        # ((((((y_future.loc[y_future["Time"] == 1016, 'woodland'].item())))-9.42)/9.42)**2) +
-        # ((((((y_future.loc[y_future["Time"] == 1016, 'grasslandParkland'].item())))-0.08)/0.08)**2))
+        # ((((statistics.mean(list(y_future.loc[y_future["Time"] > 400, 'grasslandParkland'])))-0.08)/0.08)**2) +
+        # ((((statistics.mean(list(y_future.loc[y_future["Time"] > 400, 'thornyScrub'])))-6.7)/6.7)**2) +
+        ((((statistics.mean(list(y_future.loc[y_future["Time"] > 400, 'woodland'])))-9.4)/9.4)**2))
 
 
     # print
-    if filtered_result < 1: 
-        print("n:", filtered_result, last_values_2020)
+    if filtered_result < 0.1: 
+        print("n:", filtered_result, y_future.loc[y_future["Time"] == 516.75])
 
     # return the output
     return filtered_result
@@ -541,8 +539,10 @@ def objectiveFunction_perturb2(x): # stochasticity experiment
 def run_optimizer():
     # Define the bounds: 0-100x their current levels
     bds = np.array([
-        # [0,10],[0,10],[0,10],[0,10],[0,10]])
+        # [0,2],[0,2],[0,2],[0,2],[0,2]])
         [1,1],[1,1],[1,1],[1,1],[1,1]])
+        # [0.82, 0.82],[0.94, 0.94],[0.19, 0.19],[0.74, 0.74],[1.69, 1.69]])
+
 
 
 
@@ -561,7 +561,7 @@ def run_optimizer():
     optimization.run()
     outputs = list(optimization.output_dict["variable"]) + [(optimization.output_dict["function"])]
     # return excel with rows = output values and number of filters passed
-    pd.DataFrame(outputs).to_excel('eem_optim_outputs_perturb2.xlsx', header=False, index=False)
+    pd.DataFrame(outputs).to_excel('eem_optim_outputs_perturb2_shortterm.xlsx', header=False, index=False)
     return optimization.output_dict
 
 
@@ -1025,13 +1025,13 @@ def uncertainty_perturb2():
         noise = np.random.normal(1, sd, 1).item()
 
 
-        for y in range(1000): 
+        for y in range(500): 
             years_covered += 1
             
             starting_values = last_values_2020.copy()
 
             # apply the perturbations; don't let it go below 0
-            if years_covered >= 516: 
+            if years_covered >= 16: 
                 # increase the amount of noise over time
                 sd += 0.003
                 # noise term is SD and at every point, choose a random normal value that has mean of 0 and that SD.
@@ -1060,10 +1060,11 @@ def uncertainty_perturb2():
                 starting_values[6] = 0.55
 
             # after 100 years of perturbations (616) decrease woodland percentages by a number
-            if years_covered == 616: 
+            if years_covered == 116: 
                 starting_values[8] = last_values_2020[8] * 0.5
             else:
                 starting_values[8] = last_values_2020[8]
+
 
             # keep track of time
             t_steady = np.linspace(years_covered, years_covered+0.75, 3)
@@ -1080,12 +1081,12 @@ def uncertainty_perturb2():
         # reshape outputs
         combined_future = np.hstack(combined_future_runs)
         combined_future_times = np.hstack(combined_future_times)
-        y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 3000).transpose(),1)))
+        y_future = (np.vstack(np.hsplit(combined_future.reshape(len(species), 1500).transpose(),1)))
         y_future = pd.DataFrame(data=y_future, columns=species)
         # put into df
         y_future['time'] = combined_future_times
         y_future["Perturbation"] = "Two"
-        y_future["State"] = "Original"
+        y_future["State"] = "Optimised"
         y_future["run_number"] = run_number
         # get 2005-2020 time-series
         combined_runs = np.hstack((results.y, second_ABC.y, third_ABC.y, fourth_ABC.y, fifth_ABC.y, sixth_ABC.y, seventh_ABC.y, ABC_2015.y, ABC_2016.y, ABC_2017.y, ABC_2018.y, ABC_2019.y, ABC_2020.y))
@@ -1095,7 +1096,7 @@ def uncertainty_perturb2():
         y_2 = pd.DataFrame(data=y_2, columns=species)
         y_2['time'] = combined_times
         y_2["Perturbation"] = "Two"
-        y_2["State"] = "Original"
+        y_2["State"] = "Optimised"
         y_2["run_number"] = run_number
 
 
@@ -1113,8 +1114,10 @@ def uncertainty_perturb2():
         all_timeseries.append(timeseries)
 
     all_timeseries = pd.concat(all_timeseries)
-    # all_timeseries.to_csv("eem_ga_timeseries_uncertainty_ga_perturb2.csv")
-    # all_timeseries.to_csv("eem_ga_timeseries_uncertainty_ga_original.csv")
+
+    all_timeseries.to_csv("eem_ga_timeseries_uncertainty_ga_perturb2_shortterm.csv")
+    # all_timeseries.to_csv("eem_ga_timeseries_uncertainty_ga_original_shortterm.csv")
+    # all_timeseries.to_csv("eem_ga_timeseries_uncertainty_ga_undesirable_shortterm.csv")
 
 
 uncertainty_perturb2()
